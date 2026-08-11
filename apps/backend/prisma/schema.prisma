@@ -15,6 +15,7 @@ model User {
   devices       Device[]
   refreshTokens RefreshToken[]
   clipboardItems ClipboardItem[]
+  files         FileRecord[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -70,4 +71,26 @@ model ClipboardItem {
 
   @@index([userId, createdAt])
   @@map("clipboard_items")
+}
+
+enum FileStatus {
+  PENDING
+  UPLOADED
+}
+
+model FileRecord {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  size       Int
+  mimeType   String?
+  checksum   String?
+  status     FileStatus @default(PENDING)
+  uploadedAt DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([userId, createdAt])
+  @@map("files")
 }
