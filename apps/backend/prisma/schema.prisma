@@ -12,6 +12,7 @@ model User {
   email         String         @unique
   password      String
   name          String?
+  devices       Device[]
   refreshTokens RefreshToken[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
@@ -30,4 +31,28 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WINDOWS
+  LINUX
+  MACOS
+  WEB
+}
+
+model Device {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  platform   DevicePlatform
+  pushToken  String?
+  lastSeenAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([userId])
+  @@map("devices")
 }
