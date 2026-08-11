@@ -2,11 +2,11 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@n
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { JwtUser } from '../auth/auth.types.js';
+import type { JwtUser } from '../auth/auth.types.js';
 import { DevicesService } from './devices.service.js';
 import { CreateDeviceDto } from './dto/create-device.dto.js';
 import { UpdateDeviceDto } from './dto/update-device.dto.js';
-import { DeviceResponse } from './device.types.js';
+import type { DeviceResponse } from './device.types.js';
 
 @ApiTags('devices')
 @ApiBearerAuth('access-token')

@@ -3,17 +3,16 @@ import { JwtService } from '@nestjs/jwt';
 import {
   ConnectedSocket,
   MessageBody,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import type { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { JwtPayload } from '../auth/auth.types.js';
+import type { JwtPayload } from '../auth/auth.types.js';
 import { isOriginAllowed } from '../config/cors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { EVENTS } from './realtime-events.js';
 import { RealtimeService } from './realtime.service.js';
 
 @WebSocketGateway({
@@ -68,7 +67,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       return;
     }
     for (const deviceId of deviceIds ?? []) {
-      this.realtimeService.emitToUser(userId, 'device.offline', { deviceId });
+      this.realtimeService.emitToUser(userId, EVENTS.deviceOffline, { deviceId });
     }
   }
 
@@ -93,6 +92,6 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       where: { id: device.id },
       data: { lastSeenAt: new Date() },
     });
-    this.realtimeService.emitToUser(userId, 'device.online', { deviceId: device.id });
+    this.realtimeService.emitToUser(userId, EVENTS.deviceOnline, { deviceId: device.id });
   }
 }

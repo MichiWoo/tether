@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { JwtUser } from '../auth/auth.types.js';
+import type { JwtUser } from '../auth/auth.types.js';
 import { ClipboardService } from './clipboard.service.js';
 import { PushClipboardDto } from './dto/push-clipboard.dto.js';
-import { ClipboardItemResponse } from './clipboard.types.js';
+import { ListClipboardQueryDto } from './dto/list-clipboard.query.dto.js';
+import type { ClipboardItemResponse } from './clipboard.types.js';
 
 @ApiTags('clipboard')
 @ApiBearerAuth('access-token')
@@ -41,12 +42,11 @@ export class ClipboardController {
     summary: 'Historial de texto',
     description: 'Últimos N items (default 20, máx 100)',
   })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   @ApiResponse({ status: 200, description: 'Lista de items, más reciente primero' })
   getHistory(
     @CurrentUser() user: JwtUser,
-    @Query('limit') limit?: string,
+    @Query() query: ListClipboardQueryDto,
   ): Promise<ClipboardItemResponse[]> {
-    return this.clipboardService.getHistory(user.id, limit ? Number(limit) : 20);
+    return this.clipboardService.getHistory(user.id, query.limit);
   }
 }

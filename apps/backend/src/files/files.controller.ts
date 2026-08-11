@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { JwtUser } from '../auth/auth.types.js';
+import type { JwtUser } from '../auth/auth.types.js';
 import { FilesService } from './files.service.js';
 import { CreateFileDto } from './dto/create-file.dto.js';
-import { CreateFileResponse, FileDownloadResponse, FileResponse } from './file.types.js';
+import { ListFilesQueryDto } from './dto/list-files.query.dto.js';
+import type { CreateFileResponse, FileDownloadResponse, FileResponse } from './file.types.js';
 
 @ApiTags('files')
 @ApiBearerAuth('access-token')
@@ -28,10 +29,12 @@ export class FilesController {
 
   @Get()
   @ApiOperation({ summary: 'Listar archivos propios' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiResponse({ status: 200, description: 'Lista de archivos' })
-  findAll(@CurrentUser() user: JwtUser, @Query('limit') limit?: string): Promise<FileResponse[]> {
-    return this.filesService.findAll(user.id, limit ? Number(limit) : 50);
+  findAll(
+    @CurrentUser() user: JwtUser,
+    @Query() query: ListFilesQueryDto,
+  ): Promise<FileResponse[]> {
+    return this.filesService.findAll(user.id, query.limit);
   }
 
   @Get(':id')

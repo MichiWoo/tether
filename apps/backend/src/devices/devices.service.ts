@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Device } from '../generated/prisma/client.js';
+import type { Device } from '../generated/prisma/client.js';
 import { CreateDeviceDto } from './dto/create-device.dto.js';
 import { UpdateDeviceDto } from './dto/update-device.dto.js';
-import { DeviceResponse } from './device.types.js';
+import type { DeviceResponse } from './device.types.js';
 
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 

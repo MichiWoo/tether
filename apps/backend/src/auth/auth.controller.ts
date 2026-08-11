@@ -7,7 +7,7 @@ import { LoginDto } from './dto/login.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
-import { AuthTokens, JwtUser } from './auth.types.js';
+import type { AuthTokens, JwtUser } from './auth.types.js';
 
 @ApiTags('auth')
 @Controller('auth')

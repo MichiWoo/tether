@@ -67,10 +67,12 @@ model ClipboardItem {
   userId         String
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   content        String
+  contentHash    String
   sourceDeviceId String?
   sourceDevice   Device?  @relation(fields: [sourceDeviceId], references: [id], onDelete: SetNull)
   createdAt      DateTime @default(now())
 
+  @@unique([userId, sourceDeviceId, contentHash])
   @@index([userId, createdAt])
   @@map("clipboard_items")
 }

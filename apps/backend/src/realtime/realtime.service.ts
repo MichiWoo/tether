@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Server } from 'socket.io';
+import type { RealtimeEvent } from './realtime-events.js';
 
 @Injectable()
 export class RealtimeService {
@@ -9,11 +10,11 @@ export class RealtimeService {
     this.server = server;
   }
 
-  emitToUser(userId: string, event: string, payload: unknown): void {
+  emitToUser(userId: string, event: RealtimeEvent, payload: unknown): void {
     this.server?.to(`user:${userId}`).emit(event, payload);
   }
 
-  emitToDevice(deviceId: string, event: string, payload: unknown): void {
+  emitToDevice(deviceId: string, event: RealtimeEvent, payload: unknown): void {
     this.server?.to(`device:${deviceId}`).emit(event, payload);
   }
 }

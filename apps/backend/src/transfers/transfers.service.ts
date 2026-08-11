@@ -1,14 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { EVENTS } from '../realtime/realtime-events.js';
 import { FileStatus, ShareStatus } from '../generated/prisma/client.js';
-import { FileResponse } from '../files/file.types.js';
+import { toFileResponse, objectKey } from '../files/file.mapper.js';
 import { CreateShareDto } from './dto/create-share.dto.js';
-import { ShareDetailResponse, ShareResponse, ShareWithFile } from './transfer.types.js';
+import type { ShareDetailResponse, ShareResponse, ShareWithFile } from './transfer.types.js';
 
 export const QUEUE_TRANSFERS = 'transfers';
 export const JOB_SHARE_CREATED = 'share:created';
@@ -18,6 +19,8 @@ const DOWNLOAD_URL_TTL = 3600;
 
 @Injectable()
 export class TransfersService {
+  private readonly logger = new Logger(TransfersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
@@ -65,16 +68,9 @@ export class TransfersService {
     return this.toResponse(share);
   }
 
-  async findAll(userId: string, status?: string): Promise<ShareResponse[]> {
-    let statusFilter: ShareStatus | undefined;
-    if (status) {
-      if (!Object.values(ShareStatus).includes(status as ShareStatus)) {
-        throw new BadRequestException('Invalid status');
-      }
-      statusFilter = status as ShareStatus;
-    }
+  async findAll(userId: string, status?: ShareStatus): Promise<ShareResponse[]> {
     const shares = await this.prisma.share.findMany({
-      where: { userId, ...(statusFilter ? { status: statusFilter } : {}) },
+      where: { userId, ...(status ? { status } : {}) },
       orderBy: { createdAt: 'desc' },
       include: { file: true },
     });
@@ -86,7 +82,7 @@ export class TransfersService {
     const downloadUrl =
       share.status !== ShareStatus.EXPIRED && share.file
         ? await this.storage.getPresignedDownloadUrl(
-            this.objectKey(userId, share.fileId),
+            objectKey(userId, share.fileId),
             share.file.name,
             DOWNLOAD_URL_TTL,
           )
@@ -104,7 +100,7 @@ export class TransfersService {
       data: { status: ShareStatus.ACCEPTED, acceptedAt: new Date() },
       include: { file: true },
     });
-    this.realtime.emitToUser(userId, 'share.accepted', {
+    this.realtime.emitToUser(userId, EVENTS.shareAccepted, {
       share: this.toResponse(updated),
     });
     return this.toResponse(updated);
@@ -120,7 +116,7 @@ export class TransfersService {
       data: { status: ShareStatus.DOWNLOADED, downloadedAt: new Date() },
       include: { file: true },
     });
-    this.realtime.emitToUser(userId, 'share.downloaded', {
+    this.realtime.emitToUser(userId, EVENTS.shareDownloaded, {
       share: this.toResponse(updated),
     });
     return this.toResponse(updated);
@@ -146,34 +142,46 @@ export class TransfersService {
     }
     const payload = { share: this.toResponse(share) };
     if (share.targetDeviceId) {
-      this.realtime.emitToDevice(share.targetDeviceId, 'share.created', payload);
+      this.realtime.emitToDevice(share.targetDeviceId, EVENTS.shareCreated, payload);
     } else {
-      this.realtime.emitToUser(share.userId, 'share.created', payload);
+      this.realtime.emitToUser(share.userId, EVENTS.shareCreated, payload);
     }
   }
 
   async expireOverdue(): Promise<void> {
+    const now = new Date();
     const overdue = await this.prisma.share.findMany({
       where: {
         status: { in: [ShareStatus.CREATED, ShareStatus.ACCEPTED] },
-        expiresAt: { lt: new Date() },
+        expiresAt: { lt: now },
       },
       include: { file: true },
     });
 
+    if (overdue.length === 0) {
+      return;
+    }
+
+    await this.prisma.share.updateMany({
+      where: { id: { in: overdue.map((share) => share.id) } },
+      data: { status: ShareStatus.EXPIRED },
+    });
+
     for (const share of overdue) {
-      await this.prisma.share.update({
-        where: { id: share.id },
-        data: { status: ShareStatus.EXPIRED },
-      });
-      this.realtime.emitToUser(share.userId, 'share.expired', {
+      this.realtime.emitToUser(share.userId, EVENTS.shareExpired, {
         shareId: share.id,
       });
-      if (share.file) {
-        await this.storage
-          .deleteObject(this.objectKey(share.userId, share.fileId))
-          .catch(() => undefined);
-        await this.prisma.fileRecord.delete({ where: { id: share.fileId } }).catch(() => undefined);
+      if (!share.file) {
+        continue;
+      }
+      try {
+        await this.storage.deleteObject(objectKey(share.userId, share.fileId));
+        await this.prisma.fileRecord.delete({ where: { id: share.fileId } });
+      } catch (err) {
+        this.logger.error(
+          `No se pudo limpiar el share expirado ${share.id} (file ${share.fileId})`,
+          err as Error,
+        );
       }
     }
   }
@@ -189,44 +197,16 @@ export class TransfersService {
     return share;
   }
 
-  private objectKey(userId: string, fileId: string): string {
-    return `users/${userId}/${fileId}`;
-  }
-
   private toResponse(share: ShareWithFile): ShareResponse {
     return {
       id: share.id,
       status: share.status,
-      file: share.file ? this.toFileResponse(share.file) : null,
+      file: share.file ? toFileResponse(share.file) : null,
       targetDeviceId: share.targetDeviceId,
       acceptedAt: share.acceptedAt?.toISOString() ?? null,
       downloadedAt: share.downloadedAt?.toISOString() ?? null,
       expiresAt: share.expiresAt.toISOString(),
       createdAt: share.createdAt.toISOString(),
-    };
-  }
-
-  private toFileResponse(file: {
-    id: string;
-    name: string;
-    size: number;
-    mimeType: string | null;
-    checksum: string | null;
-    status: FileStatus;
-    uploadedAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-  }): FileResponse {
-    return {
-      id: file.id,
-      name: file.name,
-      size: file.size,
-      mimeType: file.mimeType,
-      checksum: file.checksum,
-      status: file.status,
-      uploadedAt: file.uploadedAt?.toISOString() ?? null,
-      createdAt: file.createdAt.toISOString(),
-      updatedAt: file.updatedAt.toISOString(),
     };
   }
 }

@@ -1,5 +1,6 @@
-import { FileRecord, FileStatus, Share } from '../generated/prisma/client.js';
-import { FileResponse } from '../files/file.types.js';
+import { FileStatus } from '../generated/prisma/client.js';
+import type { FileRecord, Share } from '../generated/prisma/client.js';
+import type { FileResponse } from '../files/file.types.js';
 
 export type ShareWithFile = Share & {
   file:

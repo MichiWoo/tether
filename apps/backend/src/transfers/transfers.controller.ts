@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
-import { JwtUser } from '../auth/auth.types.js';
+import type { JwtUser } from '../auth/auth.types.js';
 import { TransfersService } from './transfers.service.js';
 import { CreateShareDto } from './dto/create-share.dto.js';
-import { ShareDetailResponse, ShareResponse } from './transfer.types.js';
+import { ListSharesQueryDto } from './dto/list-shares.query.dto.js';
+import type { ShareDetailResponse, ShareResponse } from './transfer.types.js';
 
 @ApiTags('transfers')
 @ApiBearerAuth('access-token')
@@ -29,18 +30,13 @@ export class TransfersController {
 
   @Get()
   @ApiOperation({ summary: 'Listar shares propios' })
-  @ApiQuery({
-    name: 'status',
-    required: false,
-    enum: ['CREATED', 'ACCEPTED', 'DOWNLOADED', 'EXPIRED'],
-  })
   @ApiResponse({ status: 200, description: 'Lista de shares' })
   @ApiResponse({ status: 400, description: 'status inválido' })
   findAll(
     @CurrentUser() user: JwtUser,
-    @Query('status') status?: string,
+    @Query() query: ListSharesQueryDto,
   ): Promise<ShareResponse[]> {
-    return this.transfersService.findAll(user.id, status);
+    return this.transfersService.findAll(user.id, query.status);
   }
 
   @Get(':id')

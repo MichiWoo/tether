@@ -3,12 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomUUID, createHash } from 'node:crypto';
+import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
-import { AuthTokens, JwtPayload, JwtUser } from './auth.types.js';
+import type { AuthTokens, JwtPayload, JwtUser } from './auth.types.js';
 
 const BCRYPT_ROUNDS = 12;
+
+type DbClient = PrismaClient | Prisma.TransactionClient;
 
 @Injectable()
 export class AuthService {
@@ -71,7 +74,16 @@ export class AuthService {
       where: { tokenHash },
     });
 
-    if (!stored || stored.revokedAt !== null || stored.expiresAt < new Date()) {
+    if (!stored || stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (stored.revokedAt !== null) {
+      // Token reutilizado: posible sesión comprometida → se revocan todos los del usuario
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: stored.userId },
+        data: { revokedAt: new Date() },
+      });
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -82,12 +94,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { revokedAt: new Date() },
+    // Revocar el token actual y emitir el par nuevo de forma atómica
+    return this.prisma.$transaction(async (tx) => {
+      await tx.refreshToken.update({
+        where: { id: stored.id },
+        data: { revokedAt: new Date() },
+      });
+      return this.issueTokens(user.id, user.email, tx);
     });
-
-    return this.issueTokens(user.id, user.email);
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -111,7 +125,11 @@ export class AuthService {
     return this.toPublicUser(user);
   }
 
-  private async issueTokens(userId: string, email: string): Promise<AuthTokens> {
+  private async issueTokens(
+    userId: string,
+    email: string,
+    client: DbClient = this.prisma,
+  ): Promise<AuthTokens> {
     const accessExpiresIn = this.durationToSeconds(
       this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
     );
@@ -134,7 +152,7 @@ export class AuthService {
 
     const expiresAt = new Date(Date.now() + refreshExpiresIn * 1000);
 
-    await this.prisma.refreshToken.create({
+    await client.refreshToken.create({
       data: {
         tokenHash: this.hashToken(refreshToken),
         userId,

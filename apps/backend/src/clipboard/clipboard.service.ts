@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { createHash } from 'node:crypto';
+import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { EVENTS } from '../realtime/realtime-events.js';
 import { PushClipboardDto } from './dto/push-clipboard.dto.js';
-import { ClipboardItemResponse } from './clipboard.types.js';
+import type { ClipboardItemResponse } from './clipboard.types.js';
 
 const MAX_HISTORY = 100;
 
@@ -24,30 +27,49 @@ export class ClipboardService {
       }
     }
 
+    const sourceDeviceId = dto.sourceDeviceId ?? null;
+    const contentHash = this.hashContent(dto.content);
+
+    // Fast path: dedupe por contenido + device
     const latest = await this.prisma.clipboardItem.findFirst({
-      where: { userId, sourceDeviceId: dto.sourceDeviceId ?? null },
+      where: { userId, sourceDeviceId, contentHash },
       orderBy: { createdAt: 'desc' },
       include: { sourceDevice: true },
     });
-
-    if (latest && latest.content === dto.content) {
+    if (latest) {
       return this.toResponse(latest);
     }
 
-    const item = await this.prisma.clipboardItem.create({
-      data: {
-        userId,
-        content: dto.content,
-        sourceDeviceId: dto.sourceDeviceId ?? null,
-      },
-      include: { sourceDevice: true },
-    });
-    const response = this.toResponse(item);
-    this.realtime.emitToUser(userId, 'clipboard.updated', {
-      item: response,
-      sourceDeviceId: response.sourceDeviceId,
-    });
-    return response;
+    // Red de seguridad ante peticiones concurrentes: el unique index
+    // [userId, sourceDeviceId, contentHash] evita duplicados
+    try {
+      const item = await this.prisma.clipboardItem.create({
+        data: {
+          userId,
+          content: dto.content,
+          contentHash,
+          sourceDeviceId,
+        },
+        include: { sourceDevice: true },
+      });
+      const response = this.toResponse(item);
+      this.realtime.emitToUser(userId, EVENTS.clipboardUpdated, {
+        item: response,
+        sourceDeviceId: response.sourceDeviceId,
+      });
+      return response;
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const existing = await this.prisma.clipboardItem.findFirst({
+          where: { userId, sourceDeviceId, contentHash },
+          include: { sourceDevice: true },
+        });
+        if (existing) {
+          return this.toResponse(existing);
+        }
+      }
+      throw err;
+    }
   }
 
   async getLatest(userId: string): Promise<ClipboardItemResponse | null> {
@@ -68,6 +90,10 @@ export class ClipboardService {
       include: { sourceDevice: true },
     });
     return items.map((item) => this.toResponse(item));
+  }
+
+  private hashContent(content: string): string {
+    return createHash('sha256').update(content).digest('hex');
   }
 
   private toResponse(item: {
