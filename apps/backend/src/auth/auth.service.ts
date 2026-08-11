@@ -1,0 +1,185 @@
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { randomUUID, createHash } from 'node:crypto';
+import { PrismaService } from '../prisma/prisma.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { AuthTokens, JwtPayload, JwtUser } from './auth.types';
+
+const BCRYPT_ROUNDS = 12;
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  async register(dto: RegisterDto): Promise<AuthTokens & { user: JwtUser }> {
+    const existing = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
+    if (existing) {
+      throw new ConflictException('Email already registered');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email.toLowerCase(),
+        password: passwordHash,
+        name: dto.name ?? null,
+      },
+    });
+
+    const tokens = await this.issueTokens(user.id, user.email);
+    return { ...tokens, user: this.toPublicUser(user) };
+  }
+
+  async login(dto: LoginDto): Promise<AuthTokens & { user: JwtUser }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email.toLowerCase() },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const valid = await bcrypt.compare(dto.password, user.password);
+    if (!valid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const tokens = await this.issueTokens(user.id, user.email);
+    return { ...tokens, user: this.toPublicUser(user) };
+  }
+
+  async refresh(refreshToken: string): Promise<AuthTokens> {
+    let payload: JwtPayload;
+    try {
+      payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
+        secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const tokenHash = this.hashToken(refreshToken);
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (
+      !stored ||
+      stored.revokedAt !== null ||
+      stored.expiresAt < new Date()
+    ) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    await this.prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() },
+    });
+
+    return this.issueTokens(user.id, user.email);
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    const tokenHash = this.hashToken(refreshToken);
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+    if (stored && stored.revokedAt === null) {
+      await this.prisma.refreshToken.update({
+        where: { id: stored.id },
+        data: { revokedAt: new Date() },
+      });
+    }
+  }
+
+  async getMe(userId: string): Promise<JwtUser> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return this.toPublicUser(user);
+  }
+
+  private async issueTokens(userId: string, email: string): Promise<AuthTokens> {
+    const accessToken = await this.jwtService.signAsync(
+      { email } satisfies JwtPayload,
+      {
+        subject: userId,
+        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
+      },
+    );
+
+    const jti = randomUUID();
+    const refreshToken = await this.jwtService.signAsync(
+      { jti } satisfies { jti: string },
+      {
+        secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+        expiresIn: this.configService.get<string>(
+          'REFRESH_TOKEN_EXPIRES_IN',
+          '30d',
+        ),
+      },
+    );
+
+    const expiresIn = this.configService.get<string>(
+      'REFRESH_TOKEN_EXPIRES_IN',
+      '30d',
+    );
+    const expiresAt = new Date(Date.now() + this.parseDuration(expiresIn));
+
+    await this.prisma.refreshToken.create({
+      data: {
+        tokenHash: this.hashToken(refreshToken),
+        userId,
+        expiresAt,
+      },
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private parseDuration(value: string): number {
+    const match = /^(\d+)([smhd])$/.exec(value);
+    if (!match) return 30 * 24 * 60 * 60 * 1000;
+    const amount = Number(match[1]);
+    const unit = match[2];
+    const multipliers: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
+    return amount * multipliers[unit];
+  }
+
+  private toPublicUser(user: {
+    id: string;
+    email: string;
+    name: string | null;
+  }): JwtUser {
+    return { id: user.id, email: user.email, name: user.name ?? undefined };
+  }
+}
