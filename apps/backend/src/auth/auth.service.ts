@@ -1,16 +1,12 @@
-import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomUUID, createHash } from 'node:crypto';
-import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { AuthTokens, JwtPayload, JwtUser } from './auth.types';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { RegisterDto } from './dto/register.dto.js';
+import { LoginDto } from './dto/login.dto.js';
+import { AuthTokens, JwtPayload, JwtUser } from './auth.types.js';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -75,11 +71,7 @@ export class AuthService {
       where: { tokenHash },
     });
 
-    if (
-      !stored ||
-      stored.revokedAt !== null ||
-      stored.expiresAt < new Date()
-    ) {
+    if (!stored || stored.revokedAt !== null || stored.expiresAt < new Date()) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
@@ -120,31 +112,27 @@ export class AuthService {
   }
 
   private async issueTokens(userId: string, email: string): Promise<AuthTokens> {
+    const accessExpiresIn = this.durationToSeconds(
+      this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
+    );
     const accessToken = await this.jwtService.signAsync(
-      { email } satisfies JwtPayload,
-      {
-        subject: userId,
-        expiresIn: this.configService.get<string>('JWT_EXPIRES_IN', '15m'),
-      },
+      { sub: userId, email } satisfies JwtPayload,
+      { expiresIn: accessExpiresIn },
     );
 
+    const refreshExpiresIn = this.durationToSeconds(
+      this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN', '30d'),
+    );
     const jti = randomUUID();
     const refreshToken = await this.jwtService.signAsync(
-      { jti } satisfies { jti: string },
+      { sub: userId, jti },
       {
         secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
-        expiresIn: this.configService.get<string>(
-          'REFRESH_TOKEN_EXPIRES_IN',
-          '30d',
-        ),
+        expiresIn: refreshExpiresIn,
       },
     );
 
-    const expiresIn = this.configService.get<string>(
-      'REFRESH_TOKEN_EXPIRES_IN',
-      '30d',
-    );
-    const expiresAt = new Date(Date.now() + this.parseDuration(expiresIn));
+    const expiresAt = new Date(Date.now() + refreshExpiresIn * 1000);
 
     await this.prisma.refreshToken.create({
       data: {
@@ -175,11 +163,11 @@ export class AuthService {
     return amount * multipliers[unit];
   }
 
-  private toPublicUser(user: {
-    id: string;
-    email: string;
-    name: string | null;
-  }): JwtUser {
+  private durationToSeconds(value: string): number {
+    return Math.floor(this.parseDuration(value) / 1000);
+  }
+
+  private toPublicUser(user: { id: string; email: string; name: string | null }): JwtUser {
     return { id: user.id, email: user.email, name: user.name ?? undefined };
   }
 }
