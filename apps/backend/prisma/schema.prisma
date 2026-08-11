@@ -16,6 +16,7 @@ model User {
   refreshTokens RefreshToken[]
   clipboardItems ClipboardItem[]
   files         FileRecord[]
+  shares        Share[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -53,6 +54,7 @@ model Device {
   pushToken      String?
   lastSeenAt     DateTime?
   clipboardItems ClipboardItem[]
+  shares         Share[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -88,9 +90,37 @@ model FileRecord {
   checksum   String?
   status     FileStatus @default(PENDING)
   uploadedAt DateTime?
+  shares     Share[]
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
   @@index([userId, createdAt])
   @@map("files")
+}
+
+enum ShareStatus {
+  CREATED
+  ACCEPTED
+  DOWNLOADED
+  EXPIRED
+}
+
+model Share {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileId         String
+  file           FileRecord  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  targetDeviceId String?
+  targetDevice   Device?     @relation(fields: [targetDeviceId], references: [id], onDelete: SetNull)
+  status         ShareStatus @default(CREATED)
+  acceptedAt     DateTime?
+  downloadedAt   DateTime?
+  expiresAt      DateTime
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([targetDeviceId])
+  @@map("shares")
 }
