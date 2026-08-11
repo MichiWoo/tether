@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import express from 'express';
 import { AppModule } from './app.module.js';
 
@@ -22,9 +23,31 @@ async function bootstrap() {
     credentials: true,
   });
 
+  const config = new DocumentBuilder()
+    .setTitle('Tether API')
+    .setDescription(
+      'Portapapeles y transferencia de archivos entre dispositivos. API del backend NestJS.',
+    )
+    .setVersion('0.1.0')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
+    .addTag('auth', 'Registro, login y tokens')
+    .addTag('devices', 'Dispositivos propios y estado online')
+    .addTag('clipboard', 'Texto del portapapeles')
+    .addTag('files', 'Archivos y presigned URLs S3/MinIO')
+    .addTag('transfers', 'Shares de archivos entre dispositivos')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`Tether API running on http://localhost:${port}`);
+  console.log(`Swagger UI on http://localhost:${port}/docs`);
 }
 
 bootstrap();
