@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { DevicesModule } from './devices/devices.module.js';
 import { ClipboardModule } from './clipboard/clipboard.module.js';
 import { FilesModule } from './files/files.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { FilesModule } from './files/files.module.js';
     DevicesModule,
     ClipboardModule,
     FilesModule,
+    RealtimeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

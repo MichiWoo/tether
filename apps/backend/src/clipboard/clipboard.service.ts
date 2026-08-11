@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { PushClipboardDto } from './dto/push-clipboard.dto.js';
 import { ClipboardItemResponse } from './clipboard.types.js';
 
@@ -7,7 +8,10 @@ const MAX_HISTORY = 100;
 
 @Injectable()
 export class ClipboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeService,
+  ) {}
 
   async push(userId: string, dto: PushClipboardDto): Promise<ClipboardItemResponse> {
     if (dto.sourceDeviceId) {
@@ -38,7 +42,12 @@ export class ClipboardService {
       },
       include: { sourceDevice: true },
     });
-    return this.toResponse(item);
+    const response = this.toResponse(item);
+    this.realtime.emitToUser(userId, 'clipboard.updated', {
+      item: response,
+      sourceDeviceId: response.sourceDeviceId,
+    });
+    return response;
   }
 
   async getLatest(userId: string): Promise<ClipboardItemResponse | null> {

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { StorageService } from '../storage/storage.service.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { FileRecord, FileStatus } from '../generated/prisma/client.js';
 import { CreateFileDto } from './dto/create-file.dto.js';
 import { CreateFileResponse, FileDownloadResponse, FileResponse } from './file.types.js';
@@ -13,6 +14,7 @@ export class FilesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly realtime: RealtimeService,
   ) {}
 
   async create(userId: string, dto: CreateFileDto): Promise<CreateFileResponse> {
@@ -83,7 +85,9 @@ export class FilesService {
       where: { id: fileId },
       data: { status: FileStatus.UPLOADED, uploadedAt: new Date() },
     });
-    return this.toResponse(updated);
+    const response = this.toResponse(updated);
+    this.realtime.emitToUser(userId, 'file.ready', { file: response });
+    return response;
   }
 
   async remove(userId: string, fileId: string): Promise<{ success: true }> {
