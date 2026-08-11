@@ -71,6 +71,7 @@ Para cada ambiente se proveen **variables de entorno distintas**. Lo mínimo que
 | `JWT_SECRET` | secreto aleatorio de QA | secreto aleatorio de prod |
 | `REFRESH_TOKEN_SECRET` | secreto aleatorio de QA | secreto aleatorio de prod |
 | `SHARE_TTL_DAYS` | `7` | `7` (o según plan) |
+| `CORS_ORIGINS` | `https://app-qa.tether.app` | `https://app.tether.app` |
 
 Pasos para subir un ambiente:
 
@@ -96,6 +97,9 @@ curl https://api.tether.app/docs          # → Swagger UI
 - `JWT_SECRET` y `REFRESH_TOKEN_SECRET` deben ser distintos entre QA y prod, generados con `openssl rand -hex 48`, y rotarse ante fuga.
 - Los buckets de MinIO/S3 deben ser distintos por ambiente (`tether-dev`, `tether-qa`, `tether-prod`).
 - En QA/prod usa Postgres y Redis administrados (no los contenedores del `docker-compose.yml`, que son solo para dev).
+- `CORS_ORIGINS` es una lista separada por comas de orígenes permitidos (`*` = todos, solo para dev). El arranque **falla rápido** si faltan o son inválidas las variables de entorno obligatorias (Joi).
+
+**Protecciones activas:** rate limiting global (`@nestjs/throttler`, 100 req/min) con límites más estrictos en `auth` (register 5/min, login 10/min, refresh 30/min, responden `429` con `Retry-After`), headers de seguridad `helmet`, CORS por lista blanca y `enableShutdownHooks`.
 
 ## 3. Autenticación
 

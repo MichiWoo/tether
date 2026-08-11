@@ -12,11 +12,16 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtPayload } from '../auth/auth.types.js';
+import { isOriginAllowed } from '../config/cors.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RealtimeService } from './realtime.service.js';
 
 @WebSocketGateway({
-  cors: { origin: true, credentials: true },
+  cors: {
+    origin: (origin: string, callback: (err: Error | null, allow?: boolean) => void) =>
+      callback(null, isOriginAllowed(origin)),
+    credentials: true,
+  },
   path: '/realtime',
   transports: ['websocket', 'polling'],
 })

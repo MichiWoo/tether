@@ -23,7 +23,7 @@ export class StorageService implements OnModuleInit {
   constructor(configService: ConfigService) {
     const endpoint = configService.get<string>('MINIO_ENDPOINT', 'localhost');
     const port = configService.get<string>('MINIO_PORT', '9000');
-    const useSsl = configService.get<string>('MINIO_USE_SSL', 'false') === 'true';
+    const useSsl = configService.get<boolean>('MINIO_USE_SSL', false) === true;
     this.bucket = configService.get<string>('MINIO_BUCKET', 'tether');
 
     this.s3 = new S3Client({
