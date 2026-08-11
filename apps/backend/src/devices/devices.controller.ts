@@ -6,7 +6,7 @@ import type { JwtUser } from '../auth/auth.types.js';
 import { DevicesService } from './devices.service.js';
 import { CreateDeviceDto } from './dto/create-device.dto.js';
 import { UpdateDeviceDto } from './dto/update-device.dto.js';
-import type { DeviceResponse } from './device.types.js';
+import { DeviceResponse } from './device.types.js';
 
 @ApiTags('devices')
 @ApiBearerAuth('access-token')
@@ -17,7 +17,7 @@ export class DevicesController {
 
   @Post()
   @ApiOperation({ summary: 'Registrar dispositivo' })
-  @ApiResponse({ status: 201, description: 'Dispositivo creado' })
+  @ApiResponse({ status: 201, description: 'Dispositivo creado', type: DeviceResponse })
   @ApiResponse({ status: 401, description: 'No autenticado' })
   create(@CurrentUser() user: JwtUser, @Body() dto: CreateDeviceDto): Promise<DeviceResponse> {
     return this.devicesService.create(user.id, dto);
@@ -25,14 +25,18 @@ export class DevicesController {
 
   @Get()
   @ApiOperation({ summary: 'Listar dispositivos propios' })
-  @ApiResponse({ status: 200, description: 'Lista de dispositivos con estado online' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de dispositivos con estado online',
+    type: [DeviceResponse],
+  })
   findAll(@CurrentUser() user: JwtUser): Promise<DeviceResponse[]> {
     return this.devicesService.findAll(user.id);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Ver un dispositivo propio' })
-  @ApiResponse({ status: 200, description: 'Detalle del dispositivo' })
+  @ApiResponse({ status: 200, description: 'Detalle del dispositivo', type: DeviceResponse })
   @ApiResponse({ status: 404, description: 'Dispositivo no encontrado' })
   findOne(@CurrentUser() user: JwtUser, @Param('id') id: string): Promise<DeviceResponse> {
     return this.devicesService.findOne(user.id, id);
@@ -43,7 +47,7 @@ export class DevicesController {
     summary: 'Actualizar dispositivo',
     description: 'Renombrar o actualizar el pushToken',
   })
-  @ApiResponse({ status: 200, description: 'Dispositivo actualizado' })
+  @ApiResponse({ status: 200, description: 'Dispositivo actualizado', type: DeviceResponse })
   @ApiResponse({ status: 404, description: 'Dispositivo no encontrado' })
   update(
     @CurrentUser() user: JwtUser,
@@ -66,7 +70,7 @@ export class DevicesController {
     summary: 'Heartbeat',
     description: 'Marca el dispositivo online (ventana de 2 min)',
   })
-  @ApiResponse({ status: 201, description: 'lastSeenAt actualizado' })
+  @ApiResponse({ status: 201, description: 'lastSeenAt actualizado', type: DeviceResponse })
   @ApiResponse({ status: 404, description: 'Dispositivo no encontrado' })
   heartbeat(@CurrentUser() user: JwtUser, @Param('id') id: string): Promise<DeviceResponse> {
     return this.devicesService.heartbeat(user.id, id);

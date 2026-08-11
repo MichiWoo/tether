@@ -101,6 +101,8 @@ curl https://api.tether.app/docs          # → Swagger UI
 
 **Protecciones activas:** rate limiting global (`@nestjs/throttler`, 100 req/min) con límites más estrictos en `auth` (register 5/min, login 10/min, refresh 30/min, responden `429` con `Retry-After`), headers de seguridad `helmet`, CORS por lista blanca y `enableShutdownHooks`.
 
+**Errores:** formato unificado via `GlobalExceptionFilter` → `{ statusCode, message, error, path, timestamp }`. Logging estructurado con pino (pretty en dev, JSON en QA/prod, configurable con `LOG_LEVEL`).
+
 ## 3. Autenticación
 
 Flujo JWT con **access token corto** y **refresh token rotativo**.
@@ -190,7 +192,7 @@ TTL de expiración por `SHARE_TTL_DAYS` (default 7). Un job de BullMQ expira los
 ### sistema
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/health` | Health check (público): `status`, `version`, `uptime` |
+| GET | `/health` | Health check (público): `status`, `version`, `uptime` + **`checks`** de dependencias (`database`, `redis`, `storage`) |
 | GET | `/` | Nombre y estado del servicio (público) |
 
 ## 5. WebSocket (realtime)

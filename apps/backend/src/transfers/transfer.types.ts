@@ -1,24 +1,21 @@
-import { FileStatus } from '../generated/prisma/client.js';
-import type { FileRecord, Share } from '../generated/prisma/client.js';
+import type { FileStatus, Share } from '../generated/prisma/client.js';
 import type { FileResponse } from '../files/file.types.js';
 
 export type ShareWithFile = Share & {
-  file:
-    | (FileRecord & {
-        id: string;
-        name: string;
-        size: number;
-        mimeType: string | null;
-        checksum: string | null;
-        status: FileStatus;
-        uploadedAt: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
-      })
-    | null;
+  file: {
+    id: string;
+    name: string;
+    size: number;
+    mimeType: string | null;
+    checksum: string | null;
+    status: FileStatus;
+    uploadedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
 };
 
-export interface ShareResponse {
+export class ShareResponse {
   id: string;
   status: Share['status'];
   file: FileResponse | null;
@@ -29,6 +26,6 @@ export interface ShareResponse {
   createdAt: string;
 }
 
-export interface ShareDetailResponse extends ShareResponse {
+export class ShareDetailResponse extends ShareResponse {
   downloadUrl: string | null;
 }

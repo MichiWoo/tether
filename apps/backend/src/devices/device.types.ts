@@ -1,6 +1,6 @@
-import { DevicePlatform } from '../generated/prisma/client.js';
+import type { DevicePlatform } from '../generated/prisma/client.js';
 
-export interface DeviceResponse {
+export class DeviceResponse {
   id: string;
   name: string;
   platform: DevicePlatform;

@@ -2,14 +2,21 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 import express from 'express';
 import { AppModule } from './app.module.js';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter.js';
 import { allowedOrigins } from './config/cors.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: false,
+    bufferLogs: true,
+  });
   const configService = app.get(ConfigService);
+
+  app.useLogger(app.get(Logger));
 
   app.use(helmet());
   app.use(express.json({ limit: '5mb' }));
@@ -24,6 +31,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const origins = allowedOrigins();
   const isWildcard = origins.length === 1 && origins[0] === '*';
@@ -55,8 +63,8 @@ async function bootstrap() {
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port);
-  console.log(`Tether API running on http://localhost:${port}`);
-  console.log(`Swagger UI on http://localhost:${port}/docs`);
+  app.get(Logger).log(`Tether API running on http://localhost:${port}`);
+  app.get(Logger).log(`Swagger UI on http://localhost:${port}/docs`);
 }
 
 bootstrap();

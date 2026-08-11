@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { envValidationOptions, envValidationSchema } from './config/env.validation.js';
@@ -30,6 +31,24 @@ import { TransfersModule } from './transfers/transfers.module.js';
         limit: 100,
       },
     ]),
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        pinoHttp: {
+          level: configService.get<string>('LOG_LEVEL', 'info'),
+          transport:
+            configService.get<string>('NODE_ENV', 'development') === 'development'
+              ? {
+                  target: 'pino-pretty',
+                  options: { singleLine: true },
+                }
+              : undefined,
+          autoLogging: {
+            ignore: (req) => req.url === '/health',
+          },
+        },
+      }),
+    }),
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

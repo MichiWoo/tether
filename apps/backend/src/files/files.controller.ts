@@ -6,7 +6,7 @@ import type { JwtUser } from '../auth/auth.types.js';
 import { FilesService } from './files.service.js';
 import { CreateFileDto } from './dto/create-file.dto.js';
 import { ListFilesQueryDto } from './dto/list-files.query.dto.js';
-import type { CreateFileResponse, FileDownloadResponse, FileResponse } from './file.types.js';
+import { CreateFileResponse, FileDownloadResponse, FileResponse } from './file.types.js';
 
 @ApiTags('files')
 @ApiBearerAuth('access-token')
@@ -21,7 +21,11 @@ export class FilesController {
     description:
       'Crea el registro y devuelve una presigned URL PUT para subir el archivo directo a S3/MinIO (TTL 15 min). El servidor no actúa de buffer.',
   })
-  @ApiResponse({ status: 201, description: 'Registro creado con upload.url y headers' })
+  @ApiResponse({
+    status: 201,
+    description: 'Registro creado con upload.url y headers',
+    type: CreateFileResponse,
+  })
   @ApiResponse({ status: 400, description: 'Datos inválidos (tamaño máx 5GB, checksum hex de 64)' })
   create(@CurrentUser() user: JwtUser, @Body() dto: CreateFileDto): Promise<CreateFileResponse> {
     return this.filesService.create(user.id, dto);
@@ -29,7 +33,7 @@ export class FilesController {
 
   @Get()
   @ApiOperation({ summary: 'Listar archivos propios' })
-  @ApiResponse({ status: 200, description: 'Lista de archivos' })
+  @ApiResponse({ status: 200, description: 'Lista de archivos', type: [FileResponse] })
   findAll(
     @CurrentUser() user: JwtUser,
     @Query() query: ListFilesQueryDto,
@@ -43,7 +47,11 @@ export class FilesController {
     description:
       'Devuelve el registro + presigned URL GET (TTL 1h). Solo si el archivo está UPLOADED.',
   })
-  @ApiResponse({ status: 200, description: 'downloadUrl lista para descargar' })
+  @ApiResponse({
+    status: 200,
+    description: 'downloadUrl lista para descargar',
+    type: FileDownloadResponse,
+  })
   @ApiResponse({ status: 400, description: 'Archivo aún no subido' })
   @ApiResponse({ status: 404, description: 'Archivo no encontrado' })
   getDownload(
@@ -59,7 +67,7 @@ export class FilesController {
     description:
       'Verifica el objeto en S3 con HeadObject, marca UPLOADED y emite file.ready por WebSocket.',
   })
-  @ApiResponse({ status: 201, description: 'Archivo marcado como UPLOADED' })
+  @ApiResponse({ status: 201, description: 'Archivo marcado como UPLOADED', type: FileResponse })
   @ApiResponse({ status: 400, description: 'Objeto no encontrado en el storage' })
   @ApiResponse({ status: 404, description: 'Archivo no encontrado' })
   complete(@CurrentUser() user: JwtUser, @Param('id') id: string): Promise<FileResponse> {

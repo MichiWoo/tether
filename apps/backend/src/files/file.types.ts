@@ -1,6 +1,6 @@
-import { FileStatus } from '../generated/prisma/client.js';
+import type { FileStatus } from '../generated/prisma/client.js';
 
-export interface FileResponse {
+export class FileResponse {
   id: string;
   name: string;
   size: number;
@@ -12,16 +12,18 @@ export interface FileResponse {
   updatedAt: string;
 }
 
-export interface CreateFileResponse {
-  file: FileResponse;
-  upload: {
-    url: string;
-    method: 'PUT';
-    headers: Record<string, string>;
-  };
+export class FileUploadInfo {
+  url: string;
+  method: 'PUT';
+  headers: Record<string, string>;
 }
 
-export interface FileDownloadResponse {
+export class CreateFileResponse {
+  file: FileResponse;
+  upload: FileUploadInfo;
+}
+
+export class FileDownloadResponse {
   file: FileResponse;
   downloadUrl: string;
   expiresIn: number;

@@ -1,4 +1,4 @@
-export interface ClipboardItemResponse {
+export class ClipboardItemResponse {
   id: string;
   content: string;
   sourceDeviceId: string | null;

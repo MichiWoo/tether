@@ -7,7 +7,7 @@ import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
-import type { AuthTokens, JwtPayload, JwtUser } from './auth.types.js';
+import type { AuthResponse, AuthTokens, JwtPayload, JwtUser } from './auth.types.js';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -21,7 +21,7 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<AuthTokens & { user: JwtUser }> {
+  async register(dto: RegisterDto): Promise<AuthResponse> {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase() },
     });
@@ -42,7 +42,7 @@ export class AuthService {
     return { ...tokens, user: this.toPublicUser(user) };
   }
 
-  async login(dto: LoginDto): Promise<AuthTokens & { user: JwtUser }> {
+  async login(dto: LoginDto): Promise<AuthResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase() },
     });
