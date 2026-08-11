@@ -14,6 +14,7 @@ model User {
   name          String?
   devices       Device[]
   refreshTokens RefreshToken[]
+  clipboardItems ClipboardItem[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -43,16 +44,30 @@ enum DevicePlatform {
 }
 
 model Device {
-  id         String         @id @default(cuid())
-  userId     String
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name       String
-  platform   DevicePlatform
-  pushToken  String?
-  lastSeenAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  platform       DevicePlatform
+  pushToken      String?
+  lastSeenAt     DateTime?
+  clipboardItems ClipboardItem[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@index([userId])
   @@map("devices")
+}
+
+model ClipboardItem {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content        String
+  sourceDeviceId String?
+  sourceDevice   Device?  @relation(fields: [sourceDeviceId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("clipboard_items")
 }

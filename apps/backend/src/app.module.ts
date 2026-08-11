@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { DevicesModule } from './devices/devices.module.js';
+import { ClipboardModule } from './clipboard/clipboard.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { DevicesModule } from './devices/devices.module.js';
     HealthModule,
     AuthModule,
     DevicesModule,
+    ClipboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
