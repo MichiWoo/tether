@@ -6,7 +6,8 @@
   "packageManager": "pnpm@10.12.1",
   "scripts": {
     "build": "pnpm -r build",
-    "dev:backend": "pnpm --filter @tether/backend dev",
+    "dev:backend": "pnpm --filter @tether/backend start:dev",
+    "dev:app": "flutter run -d macos --dart-define=API_BASE_URL=http://localhost:3100",
     "lint": "pnpm -r lint",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down"
