@@ -2,13 +2,13 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 11/08/2026 (cierre de sesión)
+> **Última actualización:** 12/08/2026 (cierre de sesión — iteración 3 Files/Transfers lista)
 
 ## Estado general
 
 | Fase | Backend | App Flutter | Estado |
 |---|---|---|---|
-| **1. MVP (cloud)** | Completado | En curso (iteración 1 lista) | En desarrollo |
+| **1. MVP (cloud)** | Completado | Iteración 3 lista (Files + Compartidos) | En desarrollo |
 | 2. P2P LAN | — | — | Pendiente |
 | 3. Sin internet (Bluetooth) | — | — | Pendiente |
 | 4. Monetización | — | — | Pendiente |
@@ -69,19 +69,63 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - **macOS**: entitlements de red (`network.client`) en Debug y Release.
 - Verificado: `flutter analyze`, `flutter test`, `flutter build macos --debug`, `flutter run -d macos` contra el backend local.
 
+## 2b. App Flutter — revisión de auth y iteración 2 (completada)
+
+### Revisión de login/register vs buenas prácticas (correcciones aplicadas)
+
+- **Providers de infraestructura movidos a `core/`**: `apiClientProvider` en `core/api/api_provider.dart` y `tokenStorageProvider` en `core/storage/storage_providers.dart` (antes vivían en `features/auth/providers`).
+- **`auth_screen.dart`**: eliminado el `setState(() {})` innecesario y el retorno `bool` de login/register; el widget reacciona vía `ref.watch`. Se limpia error/campos al cambiar de modo login↔register.
+- **Bootstrap resiliente**: error de red distingue de 401 real → nuevo estado `AuthStatus.offline` conserva la sesión guardada y ofrece "Reintentar conexión"; solo un 401 limpia tokens.
+- **Interceptor de refresh mejorado**: requests paralelas en 401 esperan el mismo refresh en curso (future compartido) y se reintentan; si el refresh falla se limpia la sesión. Match exacto de ruta de refresh (sin `path.contains`).
+- **Tests de auth**: 14 unit tests (controller, interceptor, restauración de sesión).
+
+### Iteración 2 — Devices y Clipboard
+
+- **Devices**: lista con badge online/offline (actualizada en vivo por `device.online`/`device.offline`), registro, renombrar y eliminar. **Auto-registro del equipo actual** al autenticarse (`POST /devices` con platform detectada, guarda `deviceId` en `DeviceStorage` y emite `device:identify` al WebSocket).
+- **Clipboard**: historial, envío de texto (`POST /clipboard` con `sourceDeviceId` = equipo local), updates en vivo por `clipboard.updated`, y botón copiar con **`super_clipboard`**.
+- **`RealtimeService`**: `identify(deviceId)`, suscripciones tipadas por evento con cancelación (`onEvent`).
+- **Infraestructura**: `DeviceStorage` (keychain), `Endpoints` ampliado.
+- **Tests**: 39 totales (14 auth + 10 unit de controllers + 12 widget + 3 base) — controllers de Devices/Clipboard y widget tests de ambas pantallas.
+- Verificado: `flutter analyze`, `flutter test`, `flutter build macos --debug`.
+
+## 2c. App Flutter — iteración 3 Files y Compartidos (completada)
+
+### Files (pestaña "Mis archivos")
+
+- **Drag & drop** con `desktop_drop` (overlay "Suelta para subir") y **picker** con `file_selector` (todos los archivos).
+- **Upload directo a S3/MinIO con presigned PUT** (`UploadService`, dio sin auth): `POST /files` → PUT a la URL firmada con `Content-Type` exacto y `Content-Length` → `POST /files/:id/complete`.
+- **Progreso en vivo** por archivo (barra en cada tarea), errores por archivo con opción de descartar, límite de 2 GB, detección de mime con `mime` (fallback `application/octet-stream`).
+- **Lista de archivos** con icono por tipo, tamaño, estado (Pendiente/Listo via `file:ready` en vivo) y acciones compartir/descargar/eliminar.
+- **Descarga** con `getSaveLocation` (diálogo "guardar como") vía presigned GET, con avisos de progreso/éxito/error.
+
+### Compartidos (pestaña "Compartidos")
+
+- **Respuesta del backend enriquecida con `senderDeviceId`** (DTO + migración `add_share_sender_device` + columnas/tablas nuevas) para distinguir **Recibidos vs Enviados** en el cliente.
+- **Recibidos**: aceptar (`POST /shares/:id/accept`) y descargar (`GET /shares/:id` presigned → descarga → `POST /shares/:id/downloaded`), con estados visible.
+- **Enviados**: estado del share (Pendiente → Aceptado/Descargado) y cancelar (`POST /shares/:id/cancel`).
+- **Crear share** desde un archivo: diálogo con "Todos los dispositivos" (broadcast) o un device destino; envía `senderDeviceId` = equipo local.
+- **Eventos en vivo**: `share.created/accepted/downloaded/expired` mantienen la pestaña al día en todos los dispositivos (dedupe por id).
+
+### Calidad
+
+- `flutter analyze` limpio y `flutter test`: **64 tests** (14 auth + controllers + widget de archivos/compartidos + dispositivos + portapapeles + base).
+- `flutter build macos --debug` OK; entitlements macOS incluyen `files.user-selected.read-write` y `files.downloads.read-write`.
+- **Smoke test end-to-end real** contra backend local: register → device → create file → PUT MinIO (200) → complete (UPLOADED) → descarga idéntica → share broadcast + dirigido con `senderDeviceId` correcto → accept → downloaded → listado con el campo nuevo.
+- Backend: build, lint y **27 tests** OK tras la migración.
+
 ## 3. Pendientes / próximos pasos
 
 ### App Flutter (siguiente)
-- [ ] **Iteración 2**: pantallas de **Devices** (lista con online/offline, registro, renombrar, eliminar) y **Clipboard** (enviar texto + historial + updates en vivo, `device:identify`).
-- [ ] **Iteración 3**: **Files** con drag & drop (`desktop_drop`), upload con progreso (presigned PUT), shares y descargas.
-- [ ] Añadir `super_clipboard` (auto-copiar en destino) y `file_selector`.
+- [x] **Iteración 2**: pantallas de **Devices** (lista con online/offline, registro, renombrar, eliminar) y **Clipboard** (enviar texto + historial + updates en vivo, `device:identify`).
+- [x] **Iteración 3**: **Files** con drag & drop (`desktop_drop`), upload con progreso (presigned PUT), shares y descargas.
+- [ ] Progreso de descarga visible por archivo (hoy solo snackbar) y cola de descargas.
+- [ ] Auto-copiar en el dispositivo destino al recibir `clipboard.updated` (hoy el copiado es manual con `super_clipboard`).
 - [ ] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
 - [ ] **Mobile** (iOS/Android) después de estabilizar desktop.
 
 ### Backend / operación
 - [ ] Definir URLs reales de **QA y prod** (hoy placeholders en docs).
 - [ ] Desplegar ambientes QA/prod (Postgres/Redis administrados, S3 AWS, secrets por ambiente).
-- [ ] Integrar **TransferModule** con la app (consumir eventos `share.created` → notificación + descarga).
 - [ ] Empujar DTOs/eventos a `shared/protocol` cuando el frontend lo requiera.
 
 ### Pendiente de decisión
@@ -91,6 +135,7 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 
 | Commit | Descripción |
 |---|---|
+| `2c422e1` | docs: documento de avance del proyecto (AVANCE.md) |
 | `b2bb84b` | App Flutter base desktop (auth JWT, realtime, tema, shell) |
 | `a425607` | Skills de agente |
 | `dbbcf3a` | README general con diagramas end-to-end |

@@ -57,6 +57,7 @@ export class TransfersService {
     const share = await this.prisma.share.create({
       data: {
         userId,
+        senderDeviceId: dto.senderDeviceId ?? null,
         fileId: file.id,
         targetDeviceId,
         expiresAt,
@@ -202,6 +203,7 @@ export class TransfersService {
       id: share.id,
       status: share.status,
       file: share.file ? toFileResponse(share.file) : null,
+      senderDeviceId: share.senderDeviceId,
       targetDeviceId: share.targetDeviceId,
       acceptedAt: share.acceptedAt?.toISOString() ?? null,
       downloadedAt: share.downloadedAt?.toISOString() ?? null,

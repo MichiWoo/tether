@@ -34,19 +34,17 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       return;
     }
     final controller = ref.read(authControllerProvider.notifier);
-    final ok = _mode == _AuthMode.login
-        ? await controller.login(
-            email: _emailController.text,
-            password: _passwordController.text,
-          )
-        : await controller.register(
-            email: _emailController.text,
-            password: _passwordController.text,
-            name: _nameController.text,
-          );
-    if (!ok && mounted) {
-      // El estado ya contiene el error; solo pedimos rebuild.
-      setState(() {});
+    if (_mode == _AuthMode.login) {
+      await controller.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+    } else {
+      await controller.register(
+        email: _emailController.text,
+        password: _passwordController.text,
+        name: _nameController.text,
+      );
     }
   }
 
@@ -97,7 +95,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         ],
                         selected: {_mode},
                         onSelectionChanged: (selection) {
+                          if (selection.first == _mode) return;
                           setState(() => _mode = selection.first);
+                          _emailController.clear();
+                          _passwordController.clear();
+                          _nameController.clear();
+                          ref.read(authControllerProvider.notifier).clearError();
                         },
                       ),
                       const SizedBox(height: 24),
@@ -162,6 +165,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       if (auth.error != null) ...[
                         const SizedBox(height: 16),
                         _ErrorBanner(message: auth.error!),
+                        if (auth.status == AuthStatus.offline) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: auth.isLoading
+                                  ? null
+                                  : () => ref
+                                      .read(authControllerProvider.notifier)
+                                      .retryBootstrap(),
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Reintentar conexión'),
+                            ),
+                          ),
+                        ],
                       ],
                       const SizedBox(height: 24),
                       FilledButton.icon(

@@ -54,7 +54,8 @@ model Device {
   pushToken      String?
   lastSeenAt     DateTime?
   clipboardItems ClipboardItem[]
-  shares         Share[]
+  sentShares     Share[] @relation("ShareSender")
+  targetShares   Share[] @relation("ShareTarget")
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -111,10 +112,12 @@ model Share {
   id             String      @id @default(cuid())
   userId         String
   user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  senderDeviceId String?
+  senderDevice   Device?     @relation("ShareSender", fields: [senderDeviceId], references: [id], onDelete: SetNull)
   fileId         String
   file           FileRecord  @relation(fields: [fileId], references: [id], onDelete: Cascade)
   targetDeviceId String?
-  targetDevice   Device?     @relation(fields: [targetDeviceId], references: [id], onDelete: SetNull)
+  targetDevice   Device?     @relation("ShareTarget", fields: [targetDeviceId], references: [id], onDelete: SetNull)
   status         ShareStatus @default(CREATED)
   acceptedAt     DateTime?
   downloadedAt   DateTime?
@@ -124,5 +127,6 @@ model Share {
 
   @@index([userId, createdAt])
   @@index([targetDeviceId])
+  @@index([senderDeviceId])
   @@map("shares")
 }

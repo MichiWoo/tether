@@ -14,4 +14,11 @@ export class CreateShareDto {
   @IsString()
   @IsNotEmpty()
   targetDeviceId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Device desde el que se crea el share (para mostrar origen y dedupe)',
+  })
+  @IsOptional()
+  @IsString()
+  senderDeviceId?: string;
 }

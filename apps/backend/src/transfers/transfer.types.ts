@@ -19,6 +19,7 @@ export class ShareResponse {
   id: string;
   status: Share['status'];
   file: FileResponse | null;
+  senderDeviceId: string | null;
   targetDeviceId: string | null;
   acceptedAt: string | null;
   downloadedAt: string | null;

@@ -10,11 +10,16 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  desktop_drop: ^0.7.1
   dio: ^5.7.0
+  file_selector: ^1.0.3
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: ^9.2.2
   google_fonts: ^6.2.1
+  mime: ^2.0.0
+  path: ^1.9.0
   socket_io_client: ^2.0.3+1
+  super_clipboard: ^0.8.9
   window_manager: ^0.4.3
 
 dev_dependencies:

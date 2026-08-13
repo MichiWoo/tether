@@ -6,6 +6,9 @@ import '../../core/realtime/realtime_service.dart';
 import '../../core/theme/theme_mode_provider.dart';
 import '../auth/domain/models.dart';
 import '../auth/providers/auth_provider.dart';
+import '../clipboard/presentation/clipboard_screen.dart';
+import '../devices/presentation/devices_screen.dart';
+import '../files/presentation/files_screen.dart';
 
 enum _Section { devices, clipboard, files }
 
@@ -78,9 +81,20 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       children: [
         _TopBar(user: widget.user, title: _section.title),
         const Divider(height: 1),
-        Expanded(child: _SectionPlaceholder(section: _section)),
+        Expanded(child: _buildSection()),
       ],
     );
+  }
+
+  Widget _buildSection() {
+    switch (_section) {
+      case _Section.devices:
+        return const DevicesScreen();
+      case _Section.clipboard:
+        return const ClipboardScreen();
+      case _Section.files:
+        return const FilesScreen();
+    }
   }
 }
 
@@ -89,12 +103,6 @@ extension on _Section {
     _Section.devices => 'Dispositivos',
     _Section.clipboard => 'Portapapeles',
     _Section.files => 'Archivos',
-  };
-
-  IconData get icon => switch (this) {
-    _Section.devices => Icons.devices_other_outlined,
-    _Section.clipboard => Icons.content_paste_go_outlined,
-    _Section.files => Icons.folder_copy_outlined,
   };
 }
 
@@ -204,45 +212,6 @@ class _RealtimeBadge extends StatelessWidget {
             Text(label, style: Theme.of(context).textTheme.labelSmall),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Vista temporal mientras se construyen las secciones en iteraciones siguientes.
-class _SectionPlaceholder extends StatelessWidget {
-  const _SectionPlaceholder({required this.section});
-
-  final _Section section;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHighest,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(section.icon, size: 48, color: colors.primary),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '${section.title} — próximamente',
-            style: textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Esta sección llega en la próxima iteración de la app.',
-            style: textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-          ),
-        ],
       ),
     );
   }

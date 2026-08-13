@@ -1,9 +1,11 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'secure_storage_factory.dart';
+
 /// Persistencia de los tokens de sesión (Keychain/Keystore por plataforma).
 class TokenStorage {
   TokenStorage({FlutterSecureStorage? storage})
-      : _storage = storage ?? const FlutterSecureStorage();
+      : _storage = storage ?? createSecureStorage();
 
   static const _kAccess = 'access_token';
   static const _kRefresh = 'refresh_token';

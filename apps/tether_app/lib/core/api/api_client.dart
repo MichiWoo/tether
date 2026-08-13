@@ -15,19 +15,21 @@ class SessionExpiredException implements Exception {
 }
 
 /// Interceptor que inyecta el Bearer token y renueva la sesión en 401
-/// (refresh con rotación). Si el refresh falla, limpia la sesión.
+/// (refresh con rotación). Las requests que fallan con 401 mientras un
+/// refresh está en curso esperan a ese mismo refresh y se reintentan. Si el
+/// refresh falla, se limpia la sesión y se rechaza.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor(this._storage, {Dio? refreshDio})
       : _refreshDio = refreshDio ?? ApiClient.createRefreshClient();
 
   final TokenStorage _storage;
   final Dio _refreshDio;
-  bool _refreshing = false;
+  Future<void>? _refreshInFlight;
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final token = _storage.accessToken;
-    final isRefresh = options.path.contains(Endpoints.authRefresh);
+    final isRefresh = options.path == Endpoints.authRefresh;
     if (token != null && !isRefresh) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -40,36 +42,46 @@ class AuthInterceptor extends Interceptor {
     ErrorInterceptorHandler handler,
   ) async {
     final status = err.response?.statusCode;
-    final isRefresh = err.requestOptions.path.contains(Endpoints.authRefresh);
+    final isRefresh = err.requestOptions.path == Endpoints.authRefresh;
 
-    if (status == 401 && !isRefresh && !_refreshing) {
-      final refreshed = await _tryRefresh();
-      if (refreshed) {
-        final options = err.requestOptions;
-        options.headers['Authorization'] = 'Bearer ${_storage.accessToken}';
-        try {
-          final response = await _refreshDio.fetch(options);
-          handler.resolve(response);
-          return;
-        } catch (retryError) {
-          handler.reject(retryError as DioException);
-          return;
-        }
-      }
-      await _storage.clear();
-      handler.reject(err);
+    if (status != 401 || isRefresh) {
+      handler.next(err);
       return;
     }
 
-    handler.next(err);
+    await _ensureRefresh();
+
+    if (_storage.accessToken == null || !_lastRefreshOk) {
+      await _storage.clear();
+      handler.reject(_sessionExpired(err));
+      return;
+    }
+
+    // Renovamos el token en la request original y la reintentamos.
+    final options = err.requestOptions;
+    options.headers['Authorization'] = 'Bearer ${_storage.accessToken}';
+    try {
+      final response = await _refreshDio.fetch(options);
+      handler.resolve(response);
+    } catch (retryError) {
+      handler.reject(retryError as DioException);
+    }
   }
 
-  Future<bool> _tryRefresh() async {
+  Future<void> _ensureRefresh() {
+    return _refreshInFlight ??= _doRefresh().whenComplete(() {
+      _refreshInFlight = null;
+    });
+  }
+
+  bool _lastRefreshOk = true;
+
+  Future<void> _doRefresh() async {
     final refreshToken = await _storage.readRefreshToken();
     if (refreshToken == null) {
-      return false;
+      _lastRefreshOk = false;
+      return;
     }
-    _refreshing = true;
     try {
       final res = await _refreshDio.post(
         Endpoints.authRefresh,
@@ -80,13 +92,20 @@ class AuthInterceptor extends Interceptor {
         access: tokens['accessToken'] as String,
         refresh: tokens['refreshToken'] as String,
       );
-      return true;
+      _lastRefreshOk = true;
     } catch (_) {
-      return false;
-    } finally {
-      _refreshing = false;
+      _lastRefreshOk = false;
     }
   }
+
+  DioException _sessionExpired(DioException original) => DioException(
+        requestOptions: original.requestOptions,
+        response: original.response,
+        type: original.type,
+        error: const SessionExpiredException(
+          'Tu sesión expiró. Inicia sesión de nuevo.',
+        ),
+      );
 }
 
 /// Cliente HTTP de la API.

@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:tether_app/app.dart';
+import 'package:tether_app/core/storage/storage_providers.dart';
 import 'package:tether_app/core/storage/token_storage.dart';
-import 'package:tether_app/features/auth/providers/auth_provider.dart';
 
 /// TokenStorage en memoria para tests (evita el plugin de keychain).
 class _MemoryTokenStorage extends TokenStorage {
