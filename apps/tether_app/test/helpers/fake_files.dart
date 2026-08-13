@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:tether_app/features/files/data/files_api.dart';
 import 'package:tether_app/features/files/data/files_repository.dart';
@@ -108,6 +110,7 @@ class FakeUploadService extends UploadService {
   final List<String> downloadedUrls = [];
   bool failUpload = false;
   bool failDownload = false;
+  Completer<void>? downloadGate;
   final List<double> progressReports = [];
 
   @override
@@ -130,11 +133,22 @@ class FakeUploadService extends UploadService {
     required String url,
     required String savePath,
     void Function(double progress)? onProgress,
+    CancelToken? cancelToken,
   }) async {
     if (failDownload) {
       throw DioException(requestOptions: RequestOptions(path: url));
     }
+    if (downloadGate != null) {
+      await downloadGate!.future;
+    }
+    if (cancelToken?.isCancelled ?? false) {
+      throw DioException(
+        requestOptions: RequestOptions(path: url),
+        type: DioExceptionType.cancel,
+      );
+    }
     downloadedUrls.add(url);
+    onProgress?.call(0.5);
     onProgress?.call(1.0);
   }
 }

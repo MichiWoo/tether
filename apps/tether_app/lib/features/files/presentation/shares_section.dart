@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
 import '../domain/share.dart';
-import '../providers/files_provider.dart';
+import '../providers/downloads_provider.dart';
 import '../providers/shares_provider.dart';
 
 enum _SharesFilter { received, sent }
@@ -50,24 +50,27 @@ class _SharesTabState extends ConsumerState<SharesTab> {
       );
       if (location == null) return;
 
-      messenger.showSnackBar(
-        SnackBar(content: Text('Descargando "${share.file?.name}"…')),
-      );
-      await ref
-          .read(uploadServiceProvider)
-          .download(url: url, savePath: location.path);
-      await ref
-          .read(sharesControllerProvider.notifier)
-          .markDownloaded(share.id);
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(content: Text('"${share.file?.name}" descargado.')),
-      );
+      final name = share.file?.name ?? 'archivo';
+      final ok = await ref.read(downloadsControllerProvider.notifier).start(
+            name: name,
+            url: url,
+            savePath: location.path,
+          );
+      if (ok) {
+        await ref
+            .read(sharesControllerProvider.notifier)
+            .markDownloaded(share.id);
+      } else if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No se pudo descargar el share.')),
+        );
+      }
     } catch (_) {
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        const SnackBar(content: Text('No se pudo descargar el share.')),
-      );
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No se pudo descargar el share.')),
+        );
+      }
     }
   }
 

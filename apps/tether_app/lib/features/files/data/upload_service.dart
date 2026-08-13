@@ -40,15 +40,18 @@ class UploadService {
   }
 
   /// Descarga [url] hacia [savePath] usando URL firmada (GET a S3/MinIO).
-  /// Reporta progreso 0.0–1.0 vía [onProgress].
+  /// Reporta progreso 0.0–1.0 vía [onProgress] y puede cancelarse con
+  /// [cancelToken].
   Future<void> download({
     required String url,
     required String savePath,
     void Function(double progress)? onProgress,
+    CancelToken? cancelToken,
   }) async {
     await _dio.download(
       url,
       savePath,
+      cancelToken: cancelToken,
       onReceiveProgress: (received, total) {
         if (total > 0) {
           onProgress?.call(received / total);

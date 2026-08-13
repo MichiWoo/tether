@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
 import '../domain/file_item.dart';
+import '../providers/downloads_provider.dart';
 import '../providers/files_provider.dart';
 import '../providers/shares_provider.dart';
 import 'shares_section.dart';
@@ -23,6 +24,7 @@ class FilesScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const _DownloadsSection(),
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
             child: Align(
@@ -91,19 +93,12 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
     final location = await getSaveLocation(suggestedName: file.name);
     if (location == null) return;
 
-    messenger.showSnackBar(
-      SnackBar(content: Text('Descargando "${file.name}"…')),
-    );
-    try {
-      await ref
-          .read(uploadServiceProvider)
-          .download(url: url, savePath: location.path);
-      messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(content: Text('"${file.name}" descargado.')),
-      );
-    } catch (_) {
-      messenger.hideCurrentSnackBar();
+    final ok = await ref.read(downloadsControllerProvider.notifier).start(
+          name: file.name,
+          url: url,
+          savePath: location.path,
+        );
+    if (!ok && mounted) {
       messenger.showSnackBar(
         const SnackBar(content: Text('No se pudo descargar el archivo.')),
       );
@@ -474,9 +469,106 @@ class _UploadTile extends ConsumerWidget {
   }
 }
 
+/// Cola de descargas activas: una barra de progreso por archivo.
+/// Se muestra sobre el contenido para verse desde cualquier pestaña.
+class _DownloadsSection extends ConsumerWidget {
+  const _DownloadsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final downloads = ref.watch(downloadsControllerProvider).downloads;
+    if (downloads.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final task in downloads) _DownloadTile(task: task),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tile de descarga con barra de progreso y botón para cancelar/descartar.
+class _DownloadTile extends ConsumerWidget {
+  const _DownloadTile({required this.task});
+
+  final DownloadTask task;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final error = task.error;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: error != null
+              ? colors.errorContainer.withOpacity(0.4)
+              : colors.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              error != null ? Icons.error_outline : Icons.download_outlined,
+              color: error != null ? colors.error : colors.primary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  if (error != null)
+                    Text(
+                      error,
+                      style: textTheme.bodySmall?.copyWith(color: colors.error),
+                    )
+                  else
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: task.progress,
+                        minHeight: 6,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              tooltip: error != null ? 'Descartar' : 'Cancelar',
+              icon: const Icon(Icons.close),
+              onPressed: () {
+                final controller = ref.read(downloadsControllerProvider.notifier);
+                if (error != null) {
+                  controller.dismiss(task.id);
+                } else {
+                  controller.cancel(task.id);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Diálogo para elegir el destino de un share: todos los dispositivos o uno.
-class _ShareDialog extends ConsumerWidget {
-  const _ShareDialog({required this.file});
+class _ShareDialog extends ConsumerWidget {  const _ShareDialog({required this.file});
 
   final FileItem file;
 
