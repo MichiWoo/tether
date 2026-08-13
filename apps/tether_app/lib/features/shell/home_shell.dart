@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import '../../core/realtime/realtime_provider.dart';
 import '../../core/realtime/realtime_service.dart';
+import '../../core/theme/app_typography.dart';
 import '../../core/theme/dracula_palette.dart';
 import '../../core/theme/theme_mode_provider.dart';
+import '../../core/widgets/status_chip.dart';
 import '../auth/domain/models.dart';
 import '../auth/providers/auth_provider.dart';
 import '../clipboard/presentation/clipboard_screen.dart';
@@ -31,49 +34,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     return Scaffold(
       body: Row(
         children: [
-          _buildRail(),
+          _Sidebar(
+            selectedIndex: _section.index,
+            onSelected: (index) {
+              setState(() => _section = _Section.values[index]);
+            },
+          ),
           const VerticalDivider(width: 1, thickness: 1),
           Expanded(child: _buildContent()),
         ],
       ),
-    );
-  }
-
-  Widget _buildRail() {
-    final realtime = ref.watch(realtimeServiceProvider);
-    return NavigationRail(
-      selectedIndex: _section.index,
-      onDestinationSelected: (index) {
-        setState(() => _section = _Section.values[index]);
-      },
-      labelType: NavigationRailLabelType.all,
-      leading: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          children: [
-            _RealtimeBadge(status: realtime.status),
-            const SizedBox(height: 8),
-            const Icon(Icons.link, size: 28),
-          ],
-        ),
-      ),
-      destinations: const [
-        NavigationRailDestination(
-          icon: Icon(Icons.devices_other_outlined),
-          selectedIcon: Icon(Icons.devices_other),
-          label: Text('Dispositivos'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.content_paste_go_outlined),
-          selectedIcon: Icon(Icons.content_paste_go),
-          label: Text('Portapapeles'),
-        ),
-        NavigationRailDestination(
-          icon: Icon(Icons.folder_copy_outlined),
-          selectedIcon: Icon(Icons.folder_copy),
-          label: Text('Archivos'),
-        ),
-      ],
     );
   }
 
@@ -101,10 +71,151 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
 extension on _Section {
   String get title => switch (this) {
-    _Section.devices => 'Dispositivos',
-    _Section.clipboard => 'Portapapeles',
-    _Section.files => 'Archivos',
-  };
+        _Section.devices => 'Dispositivos',
+        _Section.clipboard => 'Portapapeles',
+        _Section.files => 'Archivos',
+      };
+}
+
+/// Barra lateral con la marca, el estado realtime y la navegación.
+class _Sidebar extends ConsumerWidget {
+  const _Sidebar({required this.selectedIndex, required this.onSelected});
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  static const _items = [
+    (
+      icon: Icons.devices_other_outlined,
+      selectedIcon: Icons.devices_other,
+      label: 'Dispositivos'
+    ),
+    (
+      icon: Icons.content_paste_go_outlined,
+      selectedIcon: Icons.content_paste_go,
+      label: 'Portapapeles'
+    ),
+    (
+      icon: Icons.folder_copy_outlined,
+      selectedIcon: Icons.folder_copy,
+      label: 'Archivos'
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final realtime = ref.watch(realtimeServiceProvider);
+    final colors = Theme.of(context).colorScheme;
+
+    return Container(
+      width: 208,
+      color: colors.surfaceContainerLow,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: colors.primary.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Image.asset('assets/logo.png'),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Tether',
+                  style: TextStyle(
+                    fontFamily: AppFonts.display,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                    color: colors.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _RealtimeBadge(status: realtime.status),
+            ),
+          ),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          for (var i = 0; i < _items.length; i++)
+            _NavItem(
+              icon: _items[i].icon,
+              selectedIcon: _items[i].selectedIcon,
+              label: _items[i].label,
+              selected: i == selectedIndex,
+              onTap: () => onSelected(i),
+            ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final background = selected ? colors.primaryContainer : Colors.transparent;
+    final foreground =
+        selected ? colors.onPrimaryContainer : colors.onSurfaceVariant;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(selected ? selectedIcon : icon,
+                    size: 18, color: foreground),
+                const SizedBox(width: 12),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: foreground,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _TopBar extends ConsumerWidget {
@@ -125,27 +236,29 @@ class _TopBar extends ConsumerWidget {
             title,
             style: Theme.of(
               context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
           ),
           const Spacer(),
-          IconButton(
-            tooltip: themeMode == ThemeMode.dark ? 'Modo claro' : 'Modo oscuro',
+          shadcn.IconButton.ghost(
             icon: Icon(
               themeMode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode,
             ),
             onPressed: () {
               ref.read(themeModeProvider.notifier).state =
-                  themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+                  themeMode == ThemeMode.dark
+                      ? ThemeMode.light
+                      : ThemeMode.dark;
             },
           ),
           const SizedBox(width: 8),
           MenuAnchor(
-            builder: (context, controller, _) => IconButton(
-              tooltip: user.email,
+            builder: (context, controller, _) => shadcn.IconButton.ghost(
               icon: const Icon(Icons.account_circle),
-              onPressed: () => controller.isOpen
-                  ? controller.close()
-                  : controller.open(),
+              onPressed: () =>
+                  controller.isOpen ? controller.close() : controller.open(),
             ),
             menuChildren: [
               Padding(
@@ -167,9 +280,8 @@ class _TopBar extends ConsumerWidget {
               const Divider(height: 1),
               MenuItemButton(
                 leadingIcon: const Icon(Icons.logout),
-                onPressed: () => ref
-                    .read(authControllerProvider.notifier)
-                    .logout(),
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).logout(),
                 child: const Text('Cerrar sesión'),
               ),
             ],
@@ -189,31 +301,22 @@ class _RealtimeBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (color, label) = switch (status) {
       RealtimeStatus.connected => (StatusColors.success(context), 'En línea'),
-      RealtimeStatus.connecting => (StatusColors.warning(context), 'Conectando…'),
-      RealtimeStatus.disconnected => (StatusColors.danger(context), 'Sin conexión'),
+      RealtimeStatus.connecting => (
+          StatusColors.warning(context),
+          'Conectando…'
+        ),
+      RealtimeStatus.disconnected => (
+          StatusColors.danger(context),
+          'Sin conexión'
+        ),
     };
 
-    return Tooltip(
-      message: 'Realtime: $label',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 6),
-            Text(label, style: Theme.of(context).textTheme.labelSmall),
-          ],
-        ),
-      ),
+    return StatusChip(
+      label: label,
+      color: color.withValues(alpha: 0.15),
+      foreground: color,
+      dot: true,
+      tooltip: 'Realtime: $label',
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tether_app/core/theme/shadcn_theme.dart';
 import 'package:tether_app/features/files/domain/file_item.dart';
 import 'package:tether_app/features/files/presentation/file_preview.dart';
 import 'package:tether_app/features/files/providers/files_provider.dart';
@@ -34,7 +35,13 @@ void main() {
         uploadServiceProvider.overrideWithValue(uploadService),
       ],
       child: MaterialApp(
-        home: FilePreviewDialog(file: item, previewUrl: 'https://example.com/x'),
+        builder: (context, child) => TetherShadcnTheme(
+          brightness: Theme.of(context).brightness,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: Scaffold(
+          body: FilePreviewDialog(file: item, previewUrl: 'https://example.com/x'),
+        ),
       ),
     );
   }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/error_banner.dart';
 import '../domain/clipboard_item.dart';
 import '../providers/clipboard_provider.dart';
 import '../../devices/providers/devices_provider.dart';
@@ -20,7 +23,8 @@ class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(clipboardControllerProvider.notifier).loadHistory());
+    Future.microtask(
+        () => ref.read(clipboardControllerProvider.notifier).loadHistory());
   }
 
   @override
@@ -32,11 +36,12 @@ class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
   Future<void> _send() async {
     final content = _controller.text.trim();
     if (content.isEmpty) return;
-    final deviceId = await ref.read(devicesControllerProvider.notifier).currentDeviceId();
+    final deviceId =
+        await ref.read(devicesControllerProvider.notifier).currentDeviceId();
     await ref.read(clipboardControllerProvider.notifier).push(
-      content: content,
-      sourceDeviceId: deviceId,
-    );
+          content: content,
+          sourceDeviceId: deviceId,
+        );
     _controller.clear();
   }
 
@@ -46,7 +51,9 @@ class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            ok ? 'Copiado en este dispositivo.' : 'El portapapeles no está disponible.',
+            ok
+                ? 'Copiado en este dispositivo.'
+                : 'El portapapeles no está disponible.',
           ),
         ),
       );
@@ -77,22 +84,18 @@ class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
           child: Row(
             children: [
               Expanded(
-                child: TextField(
+                child: shadcn.TextField(
+                  key: const Key('clipboard-input'),
                   controller: _controller,
-                  minLines: 1,
-                  maxLines: 4,
-                  textInputAction: TextInputAction.send,
+                  hintText: 'Texto para enviar…',
                   onSubmitted: (_) => _send(),
-                  decoration: InputDecoration(
-                    hintText: 'Texto para enviar…',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      tooltip: 'Enviar',
-                      icon: const Icon(Icons.send),
-                      onPressed: _send,
-                    ),
-                  ),
                 ),
+              ),
+              const SizedBox(width: 8),
+              shadcn.Button.primary(
+                onPressed: _send,
+                leading: const Icon(Icons.send),
+                child: const Text('Enviar'),
               ),
             ],
           ),
@@ -100,24 +103,31 @@ class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
         if (state.error != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _ErrorBanner(message: state.error!),
+            child: ErrorBanner(message: state.error!),
           ),
         const SizedBox(height: 8),
         Expanded(
           child: state.isLoading && state.items.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : state.items.isEmpty
-                  ? const _EmptyState()
+                  ? const EmptyState(
+                      icon: Icons.content_paste_go_outlined,
+                      title: 'Sin historial',
+                      subtitle:
+                          'Envía texto desde cualquier dispositivo para verlo aquí.',
+                    )
                   : RefreshIndicator(
-                      onRefresh: () async =>
-                          ref.read(clipboardControllerProvider.notifier).loadHistory(),
+                      onRefresh: () async => ref
+                          .read(clipboardControllerProvider.notifier)
+                          .loadHistory(),
                       child: ListView.separated(
                         padding: const EdgeInsets.only(bottom: 16),
                         itemCount: state.items.length,
                         separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, index) {
                           final item = state.items[index];
-                          return _ClipboardTile(item: item, onCopy: () => _copy(item));
+                          return _ClipboardTile(
+                              item: item, onCopy: () => _copy(item));
                         },
                       ),
                     ),
@@ -158,62 +168,6 @@ class _ClipboardTile extends StatelessWidget {
         onPressed: onCopy,
       ),
       onTap: onCopy,
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.content_paste_go_outlined, size: 48, color: colors.outline),
-          const SizedBox(height: 16),
-          Text('Sin historial', style: textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(
-            'Envía texto desde cualquier dispositivo para verlo aquí.',
-            style: textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.errorContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: colors.onErrorContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: colors.onErrorContainer),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

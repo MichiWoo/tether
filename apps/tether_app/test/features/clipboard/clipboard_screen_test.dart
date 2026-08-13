@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tether_app/core/theme/shadcn_theme.dart';
 import 'package:tether_app/features/clipboard/domain/clipboard_item.dart';
 import 'package:tether_app/features/clipboard/presentation/clipboard_screen.dart';
 import 'package:tether_app/features/clipboard/providers/clipboard_provider.dart';
@@ -44,7 +45,13 @@ void main() {
           ),
         ),
       ],
-      child: const MaterialApp(home: Scaffold(body: ClipboardScreen())),
+      child: MaterialApp(
+        builder: (context, child) => TetherShadcnTheme(
+          brightness: Theme.of(context).brightness,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: const Scaffold(body: ClipboardScreen()),
+      ),
     );
   }
 
@@ -88,7 +95,7 @@ void main() {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'texto nuevo');
+    await tester.enterText(find.byKey(const Key('clipboard-input')), 'texto nuevo');
     await tester.tap(find.byIcon(Icons.send));
     await tester.pumpAndSettle();
 

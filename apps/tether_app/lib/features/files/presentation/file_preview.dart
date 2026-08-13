@@ -1,33 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../domain/file_item.dart';
 import '../providers/files_provider.dart';
-
-/// Abre el diálogo de vista previa de [file]. Resuelve la URL firmada inline
-/// y delega en [FilePreviewDialog].
-Future<void> showFilePreview(
-  BuildContext context,
-  WidgetRef ref,
-  FileItem file,
-) async {
-  final String url;
-  try {
-    url = await ref.read(filesControllerProvider.notifier).getPreviewUrl(file.id);
-  } catch (_) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo cargar la vista previa.')),
-      );
-    }
-    return;
-  }
-  if (!context.mounted) return;
-  await showDialog<void>(
-    context: context,
-    builder: (_) => FilePreviewDialog(file: file, previewUrl: url),
-  );
-}
 
 /// Clasifica un archivo para decidir cómo previsualizarlo.
 enum FilePreviewKind { image, text, unsupported }
@@ -55,7 +30,7 @@ bool _isTextLike(String mime) {
 }
 
 /// Diálogo de vista previa: muestra imágenes, contenido de texto o metadata
-/// para los tipos no soportados.
+/// para los tipos no soportados. Usa componentes de shadcn_flutter.
 class FilePreviewDialog extends ConsumerStatefulWidget {
   const FilePreviewDialog({
     super.key,
@@ -85,26 +60,45 @@ class _FilePreviewDialogState extends ConsumerState<FilePreviewDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(
-        widget.file.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      content: SizedBox(
-        width: 640,
-        child: switch (_kind) {
-          FilePreviewKind.image => _ImagePreview(url: widget.previewUrl),
-          FilePreviewKind.text => _TextPreview(future: _textFuture),
-          FilePreviewKind.unsupported => _MetadataView(file: widget.file),
-        },
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cerrar'),
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 640,
+      child: Card(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.file.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: theme.colorScheme.foreground,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            switch (_kind) {
+              FilePreviewKind.image =>
+                _ImagePreview(url: widget.previewUrl),
+              FilePreviewKind.text => _TextPreview(future: _textFuture),
+              FilePreviewKind.unsupported => _MetadataView(file: widget.file),
+            },
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Button.outline(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -116,7 +110,7 @@ class _ImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return ConstrainedBox(
       constraints: const BoxConstraints(maxHeight: 480),
       child: Image.network(
@@ -125,10 +119,15 @@ class _ImagePreview extends StatelessWidget {
         width: double.infinity,
         loadingBuilder: (context, child, progress) {
           if (progress == null) return child;
+          final expected = progress.expectedTotalBytes;
           return SizedBox(
             height: 320,
             child: Center(
-              child: CircularProgressIndicator(value: progress.expectedTotalBytes != null ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes! : null),
+              child: CircularProgressIndicator(
+                value: expected != null
+                    ? progress.cumulativeBytesLoaded / expected
+                    : null,
+              ),
             ),
           );
         },
@@ -138,7 +137,11 @@ class _ImagePreview extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.broken_image_outlined, size: 48, color: colors.outline),
+                Icon(
+                  Icons.broken_image_outlined,
+                  size: 48,
+                  color: theme.colorScheme.mutedForeground,
+                ),
                 const SizedBox(height: 12),
                 const Text('No se pudo cargar la imagen.'),
               ],
@@ -157,7 +160,7 @@ class _TextPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     return FutureBuilder<String>(
       future: future,
       builder: (context, snapshot) {
@@ -174,7 +177,11 @@ class _TextPreview extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline, size: 40, color: colors.error),
+                  Icon(
+                    Icons.error_outline,
+                    size: 40,
+                    color: theme.colorScheme.destructive,
+                  ),
                   const SizedBox(height: 8),
                   const Text('No se pudo cargar el contenido.'),
                 ],
@@ -186,7 +193,7 @@ class _TextPreview extends StatelessWidget {
           constraints: const BoxConstraints(maxHeight: 420),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: colors.surfaceContainerHighest,
+            color: theme.colorScheme.muted,
             borderRadius: BorderRadius.circular(8),
           ),
           child: SingleChildScrollView(
@@ -215,18 +222,16 @@ class _MetadataView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(_icon, size: 56, color: colors.primary),
+        Icon(_icon, size: 56, color: theme.colorScheme.primary),
         const SizedBox(height: 12),
-        Text(
+        const Text(
           'Vista previa no disponible para este tipo de archivo.',
           textAlign: TextAlign.center,
-          style: textTheme.bodyMedium,
         ),
         const SizedBox(height: 16),
         _row(context, 'Tamaño', file.sizeLabel),
@@ -237,8 +242,7 @@ class _MetadataView extends StatelessWidget {
   }
 
   Widget _row(BuildContext context, String label, String value) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -247,11 +251,15 @@ class _MetadataView extends StatelessWidget {
             width: 80,
             child: Text(
               label,
-              style: textTheme.labelMedium?.copyWith(color: colors.onSurfaceVariant),
+              style: TextStyle(color: theme.colorScheme.mutedForeground),
             ),
           ),
           Expanded(
-            child: Text(value, style: textTheme.bodyMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

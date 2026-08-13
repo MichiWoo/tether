@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tether_app/core/theme/shadcn_theme.dart';
 import 'package:tether_app/features/files/domain/file_item.dart';
 import 'package:tether_app/features/files/presentation/files_screen.dart';
 import 'package:tether_app/features/files/providers/downloads_provider.dart';
@@ -48,7 +49,13 @@ void main() {
         localDeviceIdProvider.overrideWith((ref) async => 'local'),
         downloadsControllerProvider.overrideWith((ref) => downloads),
       ],
-      child: const MaterialApp(home: Scaffold(body: FilesScreen())),
+      child: MaterialApp(
+        builder: (context, child) => TetherShadcnTheme(
+          brightness: Theme.of(context).brightness,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: const Scaffold(body: FilesScreen()),
+      ),
     );
   }
 

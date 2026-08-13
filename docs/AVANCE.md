@@ -2,13 +2,13 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 12/08/2026 (sesión actual — foco en Flutter; iteración 6 tray + autostart lista)
+> **Última actualización:** 13/08/2026 (sesión actual — upgrade Flutter 3.47 + pilot shadcn_flutter)
 
 ## Estado general
 
 | Fase | Backend | App Flutter | Estado |
 |---|---|---|---|
-| **1. MVP (cloud)** | Completado | Iteración 6 lista (tray + autostart) | En desarrollo |
+| **1. MVP (cloud)** | Completado | Iteración 6 lista + pilot shadcn_flutter | En desarrollo |
 | 2. P2P LAN | — | — | Pendiente |
 | 3. Sin internet (Bluetooth) | — | — | Pendiente |
 | 4. Monetización | — | — | Pendiente |
@@ -190,6 +190,30 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 
 - `flutter analyze` limpio, `flutter test` **80 tests** OK, `flutter build macos --debug` OK.
 
+## 2i. App Flutter — upgrade SDK + pilot shadcn_flutter (en curso)
+
+### Upgrade de Flutter 3.24.2 → 3.47.0 (Dart 3.9)
+
+- `flutter upgrade` a stable 3.47.0. Se corrigieron deprecaciones (`withOpacity` → `withValues`) y se actualizó `google_fonts` a `^8.2.1` (la 6.3.0 rompía compilación de tests con el Dart nuevo). `flutter clean` para regenerar el caché de módulos Swift de pods.
+
+### Pilot shadcn_flutter
+
+- **`shadcn_flutter 0.0.53`** instalado (84 componentes, estilo shadcn/ui "New York").
+- **`core/theme/shadcn_theme.dart`**: `buildShadcnTheme(Brightness)` con `ColorScheme` shadcn a partir de la paleta Dracula (dark) / Alucard (light) + widget `TetherShadcnTheme`.
+- **`app.dart`**: se envuelve el `MaterialApp` (vía `builder`) con `TetherShadcnTheme`, para que los componentes shadcn tengan tema sin chocar con Material (la librería redefine `Theme`/`ThemeData`/`Text`/`Button`, etc.).
+- **Migraciones aplicadas** (interop: reescrituras completas + imports prefijados `as shadcn` para mezclar sin colisiones):
+  - **`file_preview.dart`** (diálogo de vista previa): `Card`, `Button`, `Icon`, `Text`, progreso shadcn. `_preview` en `files_screen` resuelve la URL y lo muestra.
+  - **`auth_screen.dart`** (rewrite completo shadcn): `TextField`, `Button.primary/secondary/ghost`, `Card`; validación manual; mantiene los textos de `widget_test`.
+  - **`clipboard_screen.dart`**: campo de envío → `shadcn.TextField` + `shadcn.Button.primary` (key `clipboard-input`).
+  - **`files_screen.dart` / `shares_section.dart`**: iconos de acción → `shadcn.IconButton.ghost`; botones de diálogos (eliminar/compartir) → `shadcn.Button.ghost/destructive`; "Aceptar" → `shadcn.Button.secondary`.
+  - **`devices_screen.dart`**: botones "Registrar"/"Guardar" → `shadcn.Button.primary`, "Cancelar" → `shadcn.Button.ghost`, "Eliminar" → `shadcn.Button.destructive`.
+  - **`home_shell.dart`**: toggle de tema y avatar → `shadcn.IconButton.ghost`.
+
+### Calidad / estado
+
+- `flutter analyze` limpio, **80 tests** OK (los tests de `file_preview`, `clipboard`, `files_screen` y `devices` envuelven `TetherShadcnTheme`), `flutter build macos --debug` OK.
+- **Pendiente**: el shell (`NavigationRail`), tabs de Archivos y listas (`ListTile`) siguen Material; se pueden migrar a shadcn (`Tabs`/`NavigationMenu`/`Card`) en una siguiente tanda. Nota: `flutter doctor` reporta que falta Android SDK 36 (no bloquea el foco macOS).
+
 ## 3. Pendientes / próximos pasos
 
 ### App Flutter (siguiente)
@@ -199,6 +223,7 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - [x] Auto-copiar en el dispositivo destino al recibir `clipboard.updated` (hoy el copiado es manual con `super_clipboard`).
 - [x] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
 - [ ] **Mobile** (iOS/Android) después de estabilizar desktop.
+- [ ] Decidir si se migra el resto de la UI a shadcn_flutter (tras validar el pilot).
 
 ### Backend / operación
 - [ ] Definir URLs reales de **QA y prod** (hoy placeholders en docs).

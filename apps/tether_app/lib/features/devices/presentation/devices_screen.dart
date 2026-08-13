@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
+import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/dracula_palette.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/error_banner.dart';
+import '../../../core/widgets/status_chip.dart';
 import '../domain/device.dart';
 import '../providers/devices_provider.dart';
 
@@ -29,9 +34,9 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     );
     if (name == null || !mounted) return;
     await ref.read(devicesControllerProvider.notifier).register(
-      name: name,
-      platform: currentPlatform(),
-    );
+          name: name,
+          platform: currentPlatform(),
+        );
   }
 
   Future<void> _rename(Device device) async {
@@ -71,14 +76,11 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
           '¿Eliminar "${device.name}"? Se desvinculará de tu cuenta.',
         ),
         actions: [
-          TextButton(
+          shadcn.Button.ghost(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          shadcn.Button.destructive(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Eliminar'),
           ),
@@ -104,13 +106,16 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
             children: [
               Text(
                 '${state.devices.length} dispositivo(s)',
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: AppFonts.monoStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const Spacer(),
-              FilledButton.icon(
+              shadcn.Button.primary(
                 onPressed: _register,
-                icon: const Icon(Icons.add),
-                label: const Text('Registrar'),
+                leading: const Icon(Icons.add),
+                child: const Text('Registrar'),
               ),
             ],
           ),
@@ -118,12 +123,16 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
         if (state.error != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: _ErrorBanner(message: state.error!),
+            child: ErrorBanner(message: state.error!),
           ),
         const SizedBox(height: 8),
         Expanded(
           child: switch (state.devices.isEmpty) {
-            true => const _EmptyState(),
+            true => const EmptyState(
+                icon: Icons.devices_other_outlined,
+                title: 'Sin dispositivos',
+                subtitle: 'Registra tu primer dispositivo para empezar.',
+              ),
             false => RefreshIndicator(
                 onRefresh: () async =>
                     ref.read(devicesControllerProvider.notifier).load(),
@@ -200,11 +209,14 @@ class _NameDialogState extends State<_NameDialog> {
         onSubmitted: (_) => _submit(),
       ),
       actions: [
-        TextButton(
+        shadcn.Button.ghost(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Guardar')),
+        shadcn.Button.primary(
+          onPressed: _submit,
+          child: const Text('Guardar'),
+        ),
       ],
     );
   }
@@ -247,7 +259,7 @@ class _DeviceTile extends StatelessWidget {
           ),
           if (isCurrent) ...[
             const SizedBox(width: 8),
-            _Chip(
+            StatusChip(
               label: 'Este equipo',
               color: colors.primaryContainer,
               foreground: colors.onPrimaryContainer,
@@ -257,7 +269,10 @@ class _DeviceTile extends StatelessWidget {
       ),
       subtitle: Text(
         device.platform.label,
-        style: textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+        style: AppFonts.monoStyle(
+          fontSize: 12,
+          color: colors.onSurfaceVariant,
+        ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -301,110 +316,15 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Chip(
+    return StatusChip(
       label: online ? 'En línea' : 'Desconectado',
       color: online
-          ? StatusColors.success(context).withOpacity(0.15)
+          ? StatusColors.success(context).withValues(alpha: 0.15)
           : Theme.of(context).colorScheme.surfaceContainerHighest,
       foreground: online
           ? StatusColors.success(context)
           : Theme.of(context).colorScheme.onSurfaceVariant,
       icon: online ? Icons.circle : Icons.circle_outlined,
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.color,
-    required this.foreground,
-    this.icon,
-  });
-
-  final String label;
-  final Color color;
-  final Color foreground;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 10, color: foreground),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: foreground),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.devices_other_outlined, size: 48, color: colors.outline),
-          const SizedBox(height: 16),
-          Text('Sin dispositivos', style: textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(
-            'Registra tu primer dispositivo para empezar.',
-            style: textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.errorContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: colors.onErrorContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: colors.onErrorContainer),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

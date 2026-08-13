@@ -2,10 +2,14 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/dracula_palette.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/error_banner.dart';
 import '../domain/file_item.dart';
 import '../providers/downloads_provider.dart';
 import '../providers/files_provider.dart';
@@ -78,10 +82,8 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
   }
 
   void _onDrop(DropDoneDetails details) {
-    final paths = details.files
-        .map((f) => f.path)
-        .where((p) => p.isNotEmpty)
-        .toList();
+    final paths =
+        details.files.map((f) => f.path).where((p) => p.isNotEmpty).toList();
     if (paths.isEmpty) return;
     ref.read(filesControllerProvider.notifier).uploadPaths(paths);
   }
@@ -114,11 +116,11 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
         title: const Text('Eliminar archivo'),
         content: Text('¿Eliminar "${file.name}" del cloud?'),
         actions: [
-          TextButton(
+          shadcn.Button.ghost(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          shadcn.Button.destructive(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Eliminar'),
           ),
@@ -144,7 +146,26 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
     );
   }
 
-  void _preview(FileItem file) => showFilePreview(context, ref, file);
+  Future<void> _preview(FileItem file) async {
+    final String url;
+    try {
+      url = await ref
+          .read(filesControllerProvider.notifier)
+          .getPreviewUrl(file.id);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo cargar la vista previa.')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => FilePreviewDialog(file: file, previewUrl: url),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +188,7 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
               if (state.error != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-                  child: _ErrorBanner(message: state.error!),
+                  child: ErrorBanner(message: state.error!),
                 ),
               if (state.uploads.isNotEmpty) _buildUploads(state.uploads),
               Padding(
@@ -177,20 +198,22 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
                     Text(
                       'Tus archivos',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                     const Spacer(),
                     if (state.files.isNotEmpty)
                       Text(
                         '${state.files.length}',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
                       ),
                     const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: 'Actualizar',
+                    shadcn.IconButton.ghost(
                       icon: const Icon(Icons.refresh),
                       onPressed: () =>
                           ref.read(filesControllerProvider.notifier).load(),
@@ -202,7 +225,12 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
                 child: state.isLoading && state.files.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : state.files.isEmpty
-                        ? const _FilesEmpty()
+                        ? const EmptyState(
+                            icon: Icons.folder_open_outlined,
+                            title: 'Sin archivos',
+                            subtitle:
+                                'Arrastra archivos a la ventana para empezar.',
+                          )
                         : ListView.separated(
                             padding: const EdgeInsets.only(bottom: 16),
                             itemCount: state.files.length,
@@ -219,9 +247,8 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
                                 onDownload: file.isUploaded
                                     ? () => _download(file)
                                     : null,
-                                onShare: file.isUploaded
-                                    ? () => _share(file)
-                                    : null,
+                                onShare:
+                                    file.isUploaded ? () => _share(file) : null,
                                 onDelete: () => _delete(file),
                               );
                             },
@@ -252,7 +279,7 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
     final colors = Theme.of(context).colorScheme;
     return Positioned.fill(
       child: Container(
-        color: colors.primary.withOpacity(0.08),
+        color: colors.primary.withValues(alpha: 0.08),
         child: Center(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -264,7 +291,8 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.file_download_outlined, size: 40, color: colors.primary),
+                Icon(Icons.file_download_outlined,
+                    size: 40, color: colors.primary),
                 const SizedBox(height: 12),
                 Text(
                   'Suelta para subir',
@@ -294,7 +322,8 @@ class _DropZone extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
       child: Material(
-        color: dragging ? colors.primaryContainer : colors.surfaceContainerHighest,
+        color:
+            dragging ? colors.primaryContainer : colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -303,13 +332,15 @@ class _DropZone extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Row(
               children: [
-                Icon(Icons.cloud_upload_outlined, size: 36, color: colors.primary),
+                Icon(Icons.cloud_upload_outlined,
+                    size: 36, color: colors.primary),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Arrastra archivos aquí', style: textTheme.titleSmall),
+                      Text('Arrastra archivos aquí',
+                          style: textTheme.titleSmall),
                       const SizedBox(height: 2),
                       Text(
                         'Se suben automáticamente a tu almacenamiento.',
@@ -373,7 +404,10 @@ class _FileTile extends StatelessWidget {
         children: [
           Text(
             '${file.sizeLabel} · ${_formatDate(file.createdAt)}',
-            style: textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+            style: AppFonts.monoStyle(
+              fontSize: 12,
+              color: colors.onSurfaceVariant,
+            ),
           ),
           if (!file.isUploaded)
             Text(
@@ -386,19 +420,16 @@ class _FileTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (onShare != null)
-            IconButton(
-              tooltip: 'Compartir',
+            shadcn.IconButton.ghost(
               icon: const Icon(Icons.ios_share),
               onPressed: onShare,
             ),
           if (onDownload != null)
-            IconButton(
-              tooltip: 'Descargar',
+            shadcn.IconButton.ghost(
               icon: const Icon(Icons.download),
               onPressed: onDownload,
             ),
-          IconButton(
-            tooltip: 'Eliminar',
+          shadcn.IconButton.ghost(
             icon: const Icon(Icons.delete_outline),
             onPressed: onDelete,
           ),
@@ -426,16 +457,14 @@ class _UploadTile extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: error != null
-              ? colors.errorContainer.withOpacity(0.4)
+              ? colors.errorContainer.withValues(alpha: 0.4)
               : colors.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
             Icon(
-              error != null
-                  ? Icons.error_outline
-                  : Icons.cloud_upload_outlined,
+              error != null ? Icons.error_outline : Icons.cloud_upload_outlined,
               color: error != null ? colors.error : colors.primary,
             ),
             const SizedBox(width: 12),
@@ -451,7 +480,9 @@ class _UploadTile extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   if (error != null)
-                    Text(error, style: textTheme.bodySmall?.copyWith(color: colors.error))
+                    Text(error,
+                        style:
+                            textTheme.bodySmall?.copyWith(color: colors.error))
                   else
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
@@ -464,13 +495,11 @@ class _UploadTile extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 8),
-            IconButton(
-              tooltip: 'Descartar',
+            shadcn.IconButton.ghost(
               icon: const Icon(Icons.close),
-              onPressed: () =>
-                  ref
-                      .read(filesControllerProvider.notifier)
-                      .dismissUpload(task.id),
+              onPressed: () => ref
+                  .read(filesControllerProvider.notifier)
+                  .dismissUpload(task.id),
             ),
           ],
         ),
@@ -519,7 +548,7 @@ class _DownloadTile extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: error != null
-              ? colors.errorContainer.withOpacity(0.4)
+              ? colors.errorContainer.withValues(alpha: 0.4)
               : colors.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(12),
         ),
@@ -558,11 +587,11 @@ class _DownloadTile extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 8),
-            IconButton(
-              tooltip: error != null ? 'Descartar' : 'Cancelar',
+            shadcn.IconButton.ghost(
               icon: const Icon(Icons.close),
               onPressed: () {
-                final controller = ref.read(downloadsControllerProvider.notifier);
+                final controller =
+                    ref.read(downloadsControllerProvider.notifier);
                 if (error != null) {
                   controller.dismiss(task.id);
                 } else {
@@ -578,7 +607,8 @@ class _DownloadTile extends ConsumerWidget {
 }
 
 /// Diálogo para elegir el destino de un share: todos los dispositivos o uno.
-class _ShareDialog extends ConsumerWidget {  const _ShareDialog({required this.file});
+class _ShareDialog extends ConsumerWidget {
+  const _ShareDialog({required this.file});
 
   final FileItem file;
 
@@ -591,9 +621,9 @@ class _ShareDialog extends ConsumerWidget {  const _ShareDialog({required this.f
     Future<void> share({String? targetDeviceId}) async {
       try {
         await ref.read(sharesControllerProvider.notifier).create(
-          fileId: file.id,
-          targetDeviceId: targetDeviceId,
-        );
+              fileId: file.id,
+              targetDeviceId: targetDeviceId,
+            );
         if (context.mounted) Navigator.pop(context);
       } catch (_) {
         if (context.mounted) {
@@ -644,7 +674,7 @@ class _ShareDialog extends ConsumerWidget {  const _ShareDialog({required this.f
         ),
       ),
       actions: [
-        TextButton(
+        shadcn.Button.ghost(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
@@ -654,75 +684,18 @@ class _ShareDialog extends ConsumerWidget {  const _ShareDialog({required this.f
 }
 
 IconData _deviceIcon(DevicePlatform platform) => switch (platform) {
-  DevicePlatform.macos => Icons.laptop_mac_outlined,
-  DevicePlatform.windows => Icons.laptop_windows_outlined,
-  DevicePlatform.linux => Icons.laptop_outlined,
-  DevicePlatform.ios => Icons.phone_iphone,
-  DevicePlatform.android => Icons.phone_android,
-  DevicePlatform.web => Icons.language,
-};
-
-class _FilesEmpty extends StatelessWidget {
-  const _FilesEmpty();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.folder_open_outlined, size: 48, color: colors.outline),
-          const SizedBox(height: 16),
-          Text('Sin archivos', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Text(
-            'Arrastra archivos a la ventana para empezar.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.errorContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: colors.onErrorContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: colors.onErrorContainer),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+      DevicePlatform.macos => Icons.laptop_mac_outlined,
+      DevicePlatform.windows => Icons.laptop_windows_outlined,
+      DevicePlatform.linux => Icons.laptop_outlined,
+      DevicePlatform.ios => Icons.phone_iphone,
+      DevicePlatform.android => Icons.phone_android,
+      DevicePlatform.web => Icons.language,
+    };
 
 String _formatDate(DateTime date) {
   final now = DateTime.now();
-  final sameDay = now.year == date.year &&
-      now.month == date.month &&
-      now.day == date.day;
+  final sameDay =
+      now.year == date.year && now.month == date.month && now.day == date.day;
   final hh = date.hour.toString().padLeft(2, '0');
   final mm = date.minute.toString().padLeft(2, '0');
   if (sameDay) return 'Hoy $hh:$mm';

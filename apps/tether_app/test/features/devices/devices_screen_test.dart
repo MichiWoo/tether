@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tether_app/core/storage/device_storage_provider.dart';
+import 'package:tether_app/core/theme/shadcn_theme.dart';
 import 'package:tether_app/features/devices/domain/device.dart';
 import 'package:tether_app/features/devices/presentation/devices_screen.dart';
 import 'package:tether_app/features/devices/providers/devices_provider.dart';
@@ -34,7 +35,13 @@ void main() {
         ),
         deviceStorageProvider.overrideWith((ref) => MemoryDeviceStorage()),
       ],
-      child: const MaterialApp(home: Scaffold(body: DevicesScreen())),
+      child: MaterialApp(
+        builder: (context, child) => TetherShadcnTheme(
+          brightness: Theme.of(context).brightness,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        home: const Scaffold(body: DevicesScreen()),
+      ),
     );
   }
 

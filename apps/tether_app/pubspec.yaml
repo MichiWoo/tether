@@ -15,13 +15,14 @@ dependencies:
   file_selector: ^1.0.3
   flutter_riverpod: ^2.6.1
   flutter_secure_storage: ^9.2.2
-  google_fonts: ^6.2.1
+  google_fonts: ^8.2.1
   mime: ^2.0.0
   path: ^1.9.0
   socket_io_client: ^2.0.3+1
   super_clipboard: ^0.8.9
   window_manager: ^0.4.3
   tray_manager: ^0.5.3
+  shadcn_flutter: ^0.0.53
 
 dev_dependencies:
   flutter_test:
@@ -32,3 +33,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/tray_icon.png
+    - assets/logo.png

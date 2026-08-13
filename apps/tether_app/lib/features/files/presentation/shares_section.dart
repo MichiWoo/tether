@@ -1,10 +1,13 @@
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
 import '../../../core/theme/dracula_palette.dart';
+import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/error_banner.dart';
 import '../domain/share.dart';
 import '../providers/downloads_provider.dart';
 import '../providers/shares_provider.dart';
@@ -92,7 +95,6 @@ class _SharesTabState extends ConsumerState<SharesTab> {
     final state = ref.watch(sharesControllerProvider);
     final devices = ref.watch(devicesControllerProvider).devices;
     final localId = ref.watch(localDeviceIdProvider).valueOrNull;
-    final colors = Theme.of(context).colorScheme;
 
     final List<Share> received;
     final List<Share> sent;
@@ -138,12 +140,10 @@ class _SharesTabState extends ConsumerState<SharesTab> {
                   ),
                 ],
                 selected: {_filter},
-                onSelectionChanged: (s) =>
-                    setState(() => _filter = s.first),
+                onSelectionChanged: (s) => setState(() => _filter = s.first),
               ),
               const Spacer(),
-              IconButton(
-                tooltip: 'Actualizar',
+              shadcn.IconButton.ghost(
                 icon: const Icon(Icons.refresh),
                 onPressed: () =>
                     ref.read(sharesControllerProvider.notifier).load(),
@@ -154,31 +154,23 @@ class _SharesTabState extends ConsumerState<SharesTab> {
         if (state.error != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.errorContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, color: colors.onErrorContainer),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      state.error!,
-                      style: TextStyle(color: colors.onErrorContainer),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            child: ErrorBanner(message: state.error!),
           ),
         Expanded(
           child: state.isLoading && state.shares.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : shares.isEmpty
-                  ? _SharesEmpty(filter: _filter)
+                  ? EmptyState(
+                      icon: _filter == _SharesFilter.sent
+                          ? Icons.ios_share
+                          : Icons.mark_email_read_outlined,
+                      title: _filter == _SharesFilter.sent
+                          ? 'Sin shares enviados'
+                          : 'Sin shares recibidos',
+                      subtitle: _filter == _SharesFilter.sent
+                          ? 'Comparte un archivo con otro dispositivo para verlo aquí.'
+                          : 'Los archivos que te compartan aparecerán aquí.',
+                    )
                   : ListView.separated(
                       padding: const EdgeInsets.only(bottom: 16),
                       itemCount: shares.length,
@@ -201,10 +193,10 @@ class _SharesTabState extends ConsumerState<SharesTab> {
                                   _filter == _SharesFilter.received)
                               ? () => _download(share)
                               : null,
-                          onCancel: (_filter == _SharesFilter.sent &&
-                                  share.isPending)
-                              ? () => _cancel(share)
-                              : null,
+                          onCancel:
+                              (_filter == _SharesFilter.sent && share.isPending)
+                                  ? () => _cancel(share)
+                                  : null,
                         );
                       },
                     ),
@@ -264,19 +256,20 @@ class _ShareTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (onAccept != null)
-            TextButton(onPressed: onAccept, child: const Text('Aceptar')),
+            shadcn.Button.secondary(
+              onPressed: onAccept,
+              child: const Text('Aceptar'),
+            ),
           if (onDownload != null)
-            IconButton(
-              tooltip: 'Descargar',
+            shadcn.IconButton.ghost(
               icon: const Icon(Icons.download),
               onPressed: onDownload,
             ),
-          IconButton(
+          shadcn.IconButton.ghost(
             icon: Icon(
               _statusIcon(share.status),
               color: _statusColor(share.status, colors),
             ),
-            tooltip: share.statusXLabel,
             onPressed: onCancel,
           ),
         ],
@@ -285,11 +278,11 @@ class _ShareTile extends StatelessWidget {
   }
 
   static IconData _statusIcon(ShareStatus status) => switch (status) {
-    ShareStatus.created => Icons.schedule,
-    ShareStatus.accepted => Icons.check_circle_outline,
-    ShareStatus.downloaded => Icons.check_circle,
-    ShareStatus.expired => Icons.cancel_outlined,
-  };
+        ShareStatus.created => Icons.schedule,
+        ShareStatus.accepted => Icons.check_circle_outline,
+        ShareStatus.downloaded => Icons.check_circle,
+        ShareStatus.expired => Icons.cancel_outlined,
+      };
 
   static Color _statusColor(ShareStatus status, ColorScheme colors) {
     final dark = colors.brightness == Brightness.dark;
@@ -306,43 +299,4 @@ class _ShareTile extends StatelessWidget {
 
 extension on Share {
   String get statusXLabel => status.label;
-}
-
-class _SharesEmpty extends StatelessWidget {
-  const _SharesEmpty({required this.filter});
-
-  final _SharesFilter filter;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final mine = filter == _SharesFilter.sent;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            mine ? Icons.ios_share : Icons.mark_email_read_outlined,
-            size: 48,
-            color: colors.outline,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            mine ? 'Sin shares enviados' : 'Sin shares recibidos',
-            style: textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            mine
-                ? 'Comparte un archivo con otro dispositivo para verlo aquí.'
-                : 'Los archivos que te compartan aparecerán aquí.',
-            style: textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -44,7 +44,7 @@ abstract final class DraculaPalette {
 /// Mezcla [color] sobre [base] con [alpha] (para derivar contenedores tonales
 /// sin salir de la paleta).
 Color _blend(Color color, Color base, double alpha) =>
-    Color.alphaBlend(color.withOpacity(alpha), base);
+    Color.alphaBlend(color.withValues(alpha: alpha), base);
 
 /// Esquema Material 3 oscuro a partir de Dracula Classic.
 ColorScheme buildDraculaColorScheme() {

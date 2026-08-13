@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/realtime/realtime_provider.dart';
 import 'core/storage/storage_providers.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/shadcn_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
 import 'features/auth/presentation/auth_screen.dart';
 import 'features/auth/providers/auth_provider.dart';
@@ -38,6 +39,10 @@ class _TetherAppState extends ConsumerState<TetherApp> {
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
       themeMode: themeMode,
+      builder: (context, child) => TetherShadcnTheme(
+        brightness: Theme.of(context).brightness,
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const _Root(),
     );
   }
