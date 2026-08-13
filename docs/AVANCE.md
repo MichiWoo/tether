@@ -2,13 +2,13 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 13/08/2026 (sesión actual — upgrade Flutter 3.47 + pilot shadcn_flutter)
+> **Última actualización:** 13/08/2026 (sesión actual — rediseño de identidad + migración completa a shadcn_flutter)
 
 ## Estado general
 
 | Fase | Backend | App Flutter | Estado |
 |---|---|---|---|
-| **1. MVP (cloud)** | Completado | Iteración 6 lista + pilot shadcn_flutter | En desarrollo |
+| **1. MVP (cloud)** | Completado | Iteración 7 (UI shadcn + identidad) | En desarrollo |
 | 2. P2P LAN | — | — | Pendiente |
 | 3. Sin internet (Bluetooth) | — | — | Pendiente |
 | 4. Monetización | — | — | Pendiente |
@@ -190,7 +190,7 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 
 - `flutter analyze` limpio, `flutter test` **80 tests** OK, `flutter build macos --debug` OK.
 
-## 2i. App Flutter — upgrade SDK + pilot shadcn_flutter (en curso)
+## 2i. App Flutter — upgrade SDK + pilot shadcn_flutter (completada)
 
 ### Upgrade de Flutter 3.24.2 → 3.47.0 (Dart 3.9)
 
@@ -214,6 +214,29 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - `flutter analyze` limpio, **80 tests** OK (los tests de `file_preview`, `clipboard`, `files_screen` y `devices` envuelven `TetherShadcnTheme`), `flutter build macos --debug` OK.
 - **Pendiente**: el shell (`NavigationRail`), tabs de Archivos y listas (`ListTile`) siguen Material; se pueden migrar a shadcn (`Tabs`/`NavigationMenu`/`Card`) en una siguiente tanda. Nota: `flutter doctor` reporta que falta Android SDK 36 (no bloquea el foco macOS).
 
+## 2j. App Flutter — identidad visual + migración completa a shadcn_flutter (completada)
+
+### Rediseño con identidad "Constellation" (Tether = el hilo que conecta dispositivos)
+
+- **Tipografía** (`core/theme/app_typography.dart`): **Sora** (display/body) + **JetBrains Mono** (IDs, fechas, tamaños, conteos, etiquetas de plataforma). Aplicada tanto al tema Material (`app_theme.dart`) como al de shadcn (`Typography.geist` con `sans`/`mono` custom).
+- **Auth** (`auth_screen.dart` reescrito): fondo de constelación animada (nodos + señal que recorre el grafo, fade-in de 3s que respeta `MediaQuery.disableAnimations`), tarjeta con glow, marca con logo en aro, toggle segmentado Iniciar/Crear cuenta, campos con icono `leading`, `autofocus`, autofill, `InputFeature.passwordToggle()` integrado y errores con `Semantics` (live region).
+- **Shell** (`home_shell.dart`): sidebar propia (marca + `StatusChip` de realtime + items con indicador activo) en lugar de `NavigationRail`; menú de cuenta shadcn.
+
+### Migración a shadcn del resto de la UI
+
+- **Widgets compartidos** (`core/widgets/`): `CardTile` (reemplazo de `ListTile` con hover), `TetherDialog` (diálogo con cuerpo `Card`), `ErrorBanner`, `EmptyState`, `StatusChip`.
+- **`files_screen.dart`**: `TabBar`/`TabBarView` → `shadcn.Tabs` + `TabItem`; listas → `CardTile`; `FilledButton.tonal` → `Button.secondary`; `AlertDialog` → `TetherDialog`; `LinearProgressIndicator` → `shadcn.LinearProgressIndicator`.
+- **`shares_section.dart`**: `SegmentedButton` → toggle segmentado; `ListTile` → `CardTile`.
+- **`devices_screen.dart`**: `PopupMenuButton` → `shadcn.showDropdown` + `DropdownMenu`; `ListTile`/`CircleAvatar` → `CardTile` + contenedor redondeado; `AlertDialog`/`TextField` → `TetherDialog` + `shadcn.TextField` (key `name-input`).
+- **`clipboard_screen.dart`**: `ListTile` → `CardTile`.
+- **`shadcn_theme.dart`**: se añade `OverlayManagerLayer` (menús/popovers/tooltips shadcn) sobre el `Theme`.
+- **Assets**: `logo.png` optimizado (1254×1254 ~1.1 MB → 256×256 ~77 KB).
+
+### Calidad / estado
+
+- `flutter analyze` limpio, `flutter test` **80 tests** OK (se ajustaron `devices_screen_test` — `find.byIcon(Icons.more_horiz)` y `Key('name-input')` — y `files_screen_test` — `shadcn.LinearProgressIndicator`), `flutter build macos --debug` OK.
+- **Sigue Material** (transitorio, sin impacto visual fuerte): `RefreshIndicator` (pull-to-refresh) y `CircularProgressIndicator` de carga.
+
 ## 3. Pendientes / próximos pasos
 
 ### App Flutter (siguiente)
@@ -223,7 +246,7 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - [x] Auto-copiar en el dispositivo destino al recibir `clipboard.updated` (hoy el copiado es manual con `super_clipboard`).
 - [x] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
 - [ ] **Mobile** (iOS/Android) después de estabilizar desktop.
-- [ ] Decidir si se migra el resto de la UI a shadcn_flutter (tras validar el pilot).
+- [x] Decidir si se migra el resto de la UI a shadcn_flutter (tras validar el pilot).
 
 ### Backend / operación
 - [ ] Definir URLs reales de **QA y prod** (hoy placeholders en docs).

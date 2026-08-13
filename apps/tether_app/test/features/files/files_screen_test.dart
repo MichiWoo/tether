@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 import 'package:tether_app/core/theme/shadcn_theme.dart';
 import 'package:tether_app/features/files/domain/file_item.dart';
 import 'package:tether_app/features/files/presentation/files_screen.dart';
@@ -89,7 +90,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('informe.pdf'), findsWidgets);
-    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    expect(find.byType(shadcn.LinearProgressIndicator), findsOneWidget);
 
     gate.complete();
     await tester.pumpAndSettle();

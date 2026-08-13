@@ -8,8 +8,10 @@ import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/dracula_palette.dart';
+import '../../../core/widgets/card_tile.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_banner.dart';
+import '../../../core/widgets/tether_dialog.dart';
 import '../domain/file_item.dart';
 import '../providers/downloads_provider.dart';
 import '../providers/files_provider.dart';
@@ -19,44 +21,40 @@ import 'shares_section.dart';
 
 /// Pantalla Archivos: sube/descarga archivos del cloud y los comparte entre
 /// los dispositivos del usuario.
-class FilesScreen extends StatelessWidget {
+class FilesScreen extends StatefulWidget {
   const FilesScreen({super.key});
 
   @override
+  State<FilesScreen> createState() => _FilesScreenState();
+}
+
+class _FilesScreenState extends State<FilesScreen> {
+  int _index = 0;
+
+  @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const _DownloadsSection(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TabBar(
-                isScrollable: true,
-                dividerColor: Colors.transparent,
-                labelColor: colors.primary,
-                unselectedLabelColor: colors.onSurfaceVariant,
-                indicatorColor: colors.primary,
-                indicatorSize: TabBarIndicatorSize.label,
-                tabs: const [
-                  Tab(text: 'Mis archivos'),
-                  Tab(text: 'Compartidos'),
-                ],
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _DownloadsSection(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: shadcn.Tabs(
+              index: _index,
+              onChanged: (i) => setState(() => _index = i),
+              children: const [
+                shadcn.TabItem(child: Text('Mis archivos')),
+                shadcn.TabItem(child: Text('Compartidos')),
+              ],
             ),
           ),
-          const Divider(height: 1),
-          const Expanded(
-            child: TabBarView(
-              children: [_FilesTab(), SharesTab()],
-            ),
-          ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: _index == 0 ? const _FilesTab() : const SharesTab(),
+        ),
+      ],
     );
   }
 }
@@ -112,7 +110,7 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
   Future<void> _delete(FileItem file) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => TetherDialog(
         title: const Text('Eliminar archivo'),
         content: Text('¿Eliminar "${file.name}" del cloud?'),
         actions: [
@@ -232,10 +230,10 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
                                 'Arrastra archivos a la ventana para empezar.',
                           )
                         : ListView.separated(
-                            padding: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                             itemCount: state.files.length,
-                            separatorBuilder: (_, __) => const Divider(
-                              height: 1,
+                            separatorBuilder: (_, __) => const SizedBox(
+                              height: 8,
                             ),
                             itemBuilder: (context, index) {
                               final file = state.files[index];
@@ -352,7 +350,7 @@ class _DropZone extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                FilledButton.tonal(
+                shadcn.Button.secondary(
                   onPressed: onTap,
                   child: const Text('Seleccionar'),
                 ),
@@ -395,7 +393,7 @@ class _FileTile extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return ListTile(
+    return CardTile(
       leading: Icon(_icon, color: colors.primary),
       onTap: onPreview,
       title: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -484,12 +482,9 @@ class _UploadTile extends ConsumerWidget {
                         style:
                             textTheme.bodySmall?.copyWith(color: colors.error))
                   else
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: task.progress,
-                        minHeight: 6,
-                      ),
+                    shadcn.LinearProgressIndicator(
+                      value: task.progress,
+                      minHeight: 6,
                     ),
                 ],
               ),
@@ -576,12 +571,9 @@ class _DownloadTile extends ConsumerWidget {
                       style: textTheme.bodySmall?.copyWith(color: colors.error),
                     )
                   else
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: task.progress,
-                        minHeight: 6,
-                      ),
+                    shadcn.LinearProgressIndicator(
+                      value: task.progress,
+                      minHeight: 6,
                     ),
                 ],
               ),
@@ -634,29 +626,29 @@ class _ShareDialog extends ConsumerWidget {
       }
     }
 
-    return AlertDialog(
+    return TetherDialog(
       title: Text('Compartir "${file.name}"'),
-      content: SizedBox(
-        width: 380,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.language),
-              title: const Text('Todos los dispositivos'),
-              subtitle: Text(
-                'Notifica a todos tus dispositivos',
-                style: textTheme.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CardTile(
+            leading: const Icon(Icons.language),
+            title: const Text('Todos los dispositivos'),
+            subtitle: Text(
+              'Notifica a todos tus dispositivos',
+              style: textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
               ),
-              onTap: () => share(),
             ),
-            if (devices.isNotEmpty) ...[
-              const Divider(height: 1),
-              for (final device in devices)
-                ListTile(
+            onTap: () => share(),
+          ),
+          if (devices.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            for (final device in devices)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: CardTile(
                   leading: Icon(_deviceIcon(device.platform)),
                   title: Text(device.name),
                   subtitle: Text(
@@ -669,9 +661,9 @@ class _ShareDialog extends ConsumerWidget {
                   ),
                   onTap: () => share(targetDeviceId: device.id),
                 ),
-            ],
+              ),
           ],
-        ),
+        ],
       ),
       actions: [
         shadcn.Button.ghost(

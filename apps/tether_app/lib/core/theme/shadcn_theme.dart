@@ -82,6 +82,8 @@ ThemeData buildShadcnTheme(Brightness brightness) => ThemeData(
 ///
 /// Se envuelve sobre el `MaterialApp` (en su `builder`) para que los
 /// componentes de shadcn tengan un ancestro `Theme` sin chocar con Material.
+/// También provee el `OverlayManagerLayer` que requieren los overlays
+/// (menús, popovers, tooltips) de shadcn.
 class TetherShadcnTheme extends StatelessWidget {
   const TetherShadcnTheme({
     super.key,
@@ -94,6 +96,11 @@ class TetherShadcnTheme extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(data: buildShadcnTheme(brightness), child: child);
+    return OverlayManagerLayer(
+      popoverHandler: const PopoverOverlayHandler(),
+      tooltipHandler: const PopoverOverlayHandler(),
+      menuHandler: const PopoverOverlayHandler(),
+      child: Theme(data: buildShadcnTheme(brightness), child: child),
+    );
   }
 }

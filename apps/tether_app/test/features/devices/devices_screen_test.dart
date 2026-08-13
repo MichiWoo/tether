@@ -57,7 +57,8 @@ void main() {
 
   tearDown(() => controller.dispose());
 
-  testWidgets('muestra el estado vacío cuando no hay dispositivos', (tester) async {
+  testWidgets('muestra el estado vacío cuando no hay dispositivos',
+      (tester) async {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
@@ -79,7 +80,8 @@ void main() {
     expect(find.text('Desconectado'), findsOneWidget);
   });
 
-  testWidgets('abre el diálogo de registro y registra un dispositivo', (tester) async {
+  testWidgets('abre el diálogo de registro y registra un dispositivo',
+      (tester) async {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
@@ -87,7 +89,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Registrar dispositivo'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'PC Windows');
+    await tester.enterText(find.byKey(const Key('name-input')), 'PC Windows');
     await tester.tap(find.text('Guardar'));
     await tester.pumpAndSettle();
 
@@ -100,12 +102,12 @@ void main() {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Renombrar'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'MacBook Pro');
+    await tester.enterText(find.byKey(const Key('name-input')), 'MacBook Pro');
     await tester.tap(find.text('Guardar'));
     await tester.pumpAndSettle();
 
@@ -118,7 +120,7 @@ void main() {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Eliminar'));
     await tester.pumpAndSettle();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
+import '../../../core/widgets/card_tile.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../domain/clipboard_item.dart';
@@ -121,9 +122,9 @@ class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
                           .read(clipboardControllerProvider.notifier)
                           .loadHistory(),
                       child: ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                         itemCount: state.items.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final item = state.items[index];
                           return _ClipboardTile(
@@ -148,7 +149,7 @@ class _ClipboardTile extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return ListTile(
+    return CardTile(
       title: Text(
         item.content,
         maxLines: 3,

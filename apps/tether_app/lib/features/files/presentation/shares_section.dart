@@ -6,6 +6,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
 import '../../../core/theme/dracula_palette.dart';
+import '../../../core/widgets/card_tile.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../domain/share.dart';
@@ -128,19 +129,45 @@ class _SharesTabState extends ConsumerState<SharesTab> {
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
           child: Row(
             children: [
-              SegmentedButton<_SharesFilter>(
-                segments: const [
-                  ButtonSegment(
-                    value: _SharesFilter.received,
-                    label: Text('Recibidos'),
-                  ),
-                  ButtonSegment(
-                    value: _SharesFilter.sent,
-                    label: Text('Enviados'),
-                  ),
-                ],
-                selected: {_filter},
-                onSelectionChanged: (s) => setState(() => _filter = s.first),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _filter == _SharesFilter.received
+                        ? shadcn.Button.secondary(
+                            onPressed: () => setState(
+                              () => _filter = _SharesFilter.received,
+                            ),
+                            child: const Text('Recibidos'),
+                          )
+                        : shadcn.Button.ghost(
+                            onPressed: () => setState(
+                              () => _filter = _SharesFilter.received,
+                            ),
+                            child: const Text('Recibidos'),
+                          ),
+                    _filter == _SharesFilter.sent
+                        ? shadcn.Button.secondary(
+                            onPressed: () => setState(
+                              () => _filter = _SharesFilter.sent,
+                            ),
+                            child: const Text('Enviados'),
+                          )
+                        : shadcn.Button.ghost(
+                            onPressed: () => setState(
+                              () => _filter = _SharesFilter.sent,
+                            ),
+                            child: const Text('Enviados'),
+                          ),
+                  ],
+                ),
               ),
               const Spacer(),
               shadcn.IconButton.ghost(
@@ -172,9 +199,9 @@ class _SharesTabState extends ConsumerState<SharesTab> {
                           : 'Los archivos que te compartan aparecerán aquí.',
                     )
                   : ListView.separated(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                       itemCount: shares.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final share = shares[index];
                         return _ShareTile(
@@ -236,7 +263,7 @@ class _ShareTile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final file = share.file;
 
-    return ListTile(
+    return CardTile(
       leading: Icon(
         mine ? Icons.ios_share : Icons.file_download_outlined,
         color: colors.primary,

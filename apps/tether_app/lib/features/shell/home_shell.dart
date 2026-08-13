@@ -254,37 +254,41 @@ class _TopBar extends ConsumerWidget {
             },
           ),
           const SizedBox(width: 8),
-          MenuAnchor(
-            builder: (context, controller, _) => shadcn.IconButton.ghost(
+          Builder(
+            builder: (context) => shadcn.IconButton.ghost(
               icon: const Icon(Icons.account_circle),
-              onPressed: () =>
-                  controller.isOpen ? controller.close() : controller.open(),
-            ),
-            menuChildren: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              onPressed: () => shadcn.showDropdown<void>(
+                context: context,
+                follow: false,
+                builder: (_) => shadcn.DropdownMenu(
                   children: [
-                    Text(
-                      user.displayName,
-                      style: Theme.of(context).textTheme.titleSmall,
+                    shadcn.MenuLabel(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            user.displayName,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          Text(
+                            user.email,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
-                    Text(
-                      user.email,
-                      style: Theme.of(context).textTheme.bodySmall,
+                    const shadcn.MenuDivider(),
+                    shadcn.MenuButton(
+                      leading: const Icon(Icons.logout),
+                      child: const Text('Cerrar sesión'),
+                      onPressed: (_) =>
+                          ref.read(authControllerProvider.notifier).logout(),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1),
-              MenuItemButton(
-                leadingIcon: const Icon(Icons.logout),
-                onPressed: () =>
-                    ref.read(authControllerProvider.notifier).logout(),
-                child: const Text('Cerrar sesión'),
-              ),
-            ],
+            ),
           ),
         ],
       ),

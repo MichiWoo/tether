@@ -4,9 +4,11 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/dracula_palette.dart';
+import '../../../core/widgets/card_tile.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/status_chip.dart';
+import '../../../core/widgets/tether_dialog.dart';
 import '../domain/device.dart';
 import '../providers/devices_provider.dart';
 
@@ -70,7 +72,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
   Future<void> _confirmDelete(Device device) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => TetherDialog(
         title: const Text('Eliminar dispositivo'),
         content: Text(
           '¿Eliminar "${device.name}"? Se desvinculará de tu cuenta.',
@@ -137,16 +139,19 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
                 onRefresh: () async =>
                     ref.read(devicesControllerProvider.notifier).load(),
                 child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                   itemCount: state.devices.length,
                   itemBuilder: (context, index) {
                     final device = state.devices[index];
                     final isCurrent = device.id == localId;
-                    return _DeviceTile(
-                      device: device,
-                      isCurrent: isCurrent,
-                      onRename: () => _rename(device),
-                      onDelete: () => _confirmDelete(device),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _DeviceTile(
+                        device: device,
+                        isCurrent: isCurrent,
+                        onRename: () => _rename(device),
+                        onDelete: () => _confirmDelete(device),
+                      ),
                     );
                   },
                 ),
@@ -197,15 +202,13 @@ class _NameDialogState extends State<_NameDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return TetherDialog(
       title: Text(widget.title),
-      content: TextField(
+      content: shadcn.TextField(
+        key: const Key('name-input'),
         controller: _controller,
         autofocus: true,
-        decoration: InputDecoration(
-          labelText: widget.label,
-          hintText: widget.hint,
-        ),
+        hintText: widget.hint ?? widget.label,
         onSubmitted: (_) => _submit(),
       ),
       actions: [
@@ -240,9 +243,14 @@ class _DeviceTile extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: colors.surfaceContainerHighest,
+    return CardTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Icon(
           _iconFor(device.platform),
           color: colors.onSurfaceVariant,
@@ -279,23 +287,36 @@ class _DeviceTile extends StatelessWidget {
         children: [
           _StatusBadge(online: device.isOnline),
           const SizedBox(width: 8),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'rename':
-                  onRename();
-                case 'delete':
-                  onDelete();
-              }
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'rename', child: Text('Renombrar')),
-              PopupMenuItem(value: 'delete', child: Text('Eliminar')),
-            ],
+          Builder(
+            builder: (context) => shadcn.IconButton.ghost(
+              icon: const Icon(Icons.more_horiz),
+              onPressed: () => _openMenu(context),
+            ),
           ),
         ],
       ),
       onTap: onRename,
+    );
+  }
+
+  void _openMenu(BuildContext context) {
+    shadcn.showDropdown<void>(
+      context: context,
+      follow: false,
+      builder: (_) => shadcn.DropdownMenu(
+        children: [
+          shadcn.MenuButton(
+            leading: const Icon(Icons.edit_outlined),
+            child: const Text('Renombrar'),
+            onPressed: (_) => onRename(),
+          ),
+          shadcn.MenuButton(
+            leading: const Icon(Icons.delete_outline),
+            child: const Text('Eliminar'),
+            onPressed: (_) => onDelete(),
+          ),
+        ],
+      ),
     );
   }
 
