@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
+import '../../../core/theme/dracula_palette.dart';
 import '../domain/share.dart';
 import '../providers/downloads_provider.dart';
 import '../providers/shares_provider.dart';
@@ -290,13 +291,17 @@ class _ShareTile extends StatelessWidget {
     ShareStatus.expired => Icons.cancel_outlined,
   };
 
-  static Color _statusColor(ShareStatus status, ColorScheme colors) =>
-      switch (status) {
-        ShareStatus.created => colors.onSurfaceVariant,
-        ShareStatus.accepted => Colors.blue,
-        ShareStatus.downloaded => Colors.green,
-        ShareStatus.expired => colors.error,
-      };
+  static Color _statusColor(ShareStatus status, ColorScheme colors) {
+    final dark = colors.brightness == Brightness.dark;
+    return switch (status) {
+      ShareStatus.created => colors.onSurfaceVariant,
+      ShareStatus.accepted =>
+        dark ? DraculaPalette.cyan : DraculaPalette.alucardCyan,
+      ShareStatus.downloaded =>
+        dark ? DraculaPalette.green : DraculaPalette.alucardGreen,
+      ShareStatus.expired => colors.error,
+    };
+  }
 }
 
 extension on Share {

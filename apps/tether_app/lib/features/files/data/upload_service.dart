@@ -59,4 +59,10 @@ class UploadService {
       },
     );
   }
+
+  /// Descarga el contenido de [url] como texto (para vista previa).
+  Future<String> fetchText(String url) async {
+    final res = await _dio.get<String>(url);
+    return res.data ?? '';
+  }
 }

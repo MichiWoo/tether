@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/dracula_palette.dart';
 import '../domain/device.dart';
 import '../providers/devices_provider.dart';
 
@@ -303,10 +304,10 @@ class _StatusBadge extends StatelessWidget {
     return _Chip(
       label: online ? 'En línea' : 'Desconectado',
       color: online
-          ? Colors.green.withOpacity(0.15)
+          ? StatusColors.success(context).withOpacity(0.15)
           : Theme.of(context).colorScheme.surfaceContainerHighest,
       foreground: online
-          ? const Color(0xFF1B5E20)
+          ? StatusColors.success(context)
           : Theme.of(context).colorScheme.onSurfaceVariant,
       icon: online ? Icons.circle : Icons.circle_outlined,
     );

@@ -173,10 +173,10 @@ class FilesController extends StateNotifier<FilesState> {
       final completed = await repository.complete(created.file.id);
       _upsertFile(completed);
       dismissUpload(taskId);
-    } on DioException catch (_) {
+    } on DioException catch (e) {
       _updateUpload(
         taskId,
-        (t) => t.copyWith(error: 'Error de red al subir.'),
+        (t) => t.copyWith(error: _uploadErrorMessage(e)),
       );
     } catch (_) {
       _updateUpload(
@@ -186,8 +186,31 @@ class FilesController extends StateNotifier<FilesState> {
     }
   }
 
+  /// Traduce una [DioException] de subida a un mensaje accionable según su
+  /// causa: fallo de conexión, firma inválida (403) u otro error HTTP.
+  String _uploadErrorMessage(DioException e) {
+    final type = e.type;
+    if (type == DioExceptionType.connectionError ||
+        type == DioExceptionType.connectionTimeout ||
+        type == DioExceptionType.sendTimeout ||
+        type == DioExceptionType.receiveTimeout) {
+      return 'No se pudo conectar con el servidor de archivos.';
+    }
+    final status = e.response?.statusCode;
+    if (status == 403) {
+      return 'La URL de subida expiró o no es válida. Intenta de nuevo.';
+    }
+    if (status != null) {
+      return 'El servidor rechazó la subida (HTTP $status).';
+    }
+    return 'Error de red al subir.';
+  }
+
   /// Devuelve la URL firmada de descarga del archivo.
   Future<String> getDownloadUrl(String id) => repository.getDownloadUrl(id);
+
+  /// Devuelve la URL firmada con disposición inline para previsualizar.
+  Future<String> getPreviewUrl(String id) => repository.getPreviewUrl(id);
 
   Future<void> delete(String id) async {
     await repository.delete(id);

@@ -59,6 +59,13 @@ class FilesApi {
     return data['downloadUrl'] as String;
   }
 
+  /// Devuelve la URL firmada con disposición inline para previsualizar.
+  Future<String> getPreviewUrl(String id) async {
+    final res = await _dio.get<Map<String, dynamic>>(Endpoints.filePreview(id));
+    final data = res.data!;
+    return data['downloadUrl'] as String;
+  }
+
   Future<FileItem> complete(String id) async {
     final res = await _dio.post(Endpoints.fileComplete(id));
     return FileItem.fromJson(res.data as Map<String, dynamic>);

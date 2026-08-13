@@ -83,7 +83,7 @@ export class TransfersService {
     const downloadUrl =
       share.status !== ShareStatus.EXPIRED && share.file
         ? await this.storage.getPresignedDownloadUrl(
-            objectKey(userId, share.fileId),
+            objectKey(userId, share.fileId, share.file.name),
             share.file.name,
             DOWNLOAD_URL_TTL,
           )
@@ -176,7 +176,7 @@ export class TransfersService {
         continue;
       }
       try {
-        await this.storage.deleteObject(objectKey(share.userId, share.fileId));
+        await this.storage.deleteObject(objectKey(share.userId, share.fileId, share.file.name));
         await this.prisma.fileRecord.delete({ where: { id: share.fileId } });
       } catch (err) {
         this.logger.error(

@@ -49,10 +49,10 @@ Accesos del entorno dev:
 | API + Swagger | http://localhost:3100 / `/docs` | — |
 | PostgreSQL | `localhost:5434` (bd/user/pass: `tether`) | — |
 | Redis | `localhost:6379` | — |
-| MinIO (S3) | http://localhost:9000 | `minioadmin` / `minioadmin` |
+| MinIO (S3) | http://localhost:9002 | `minioadmin` / `minioadmin` |
 | Consola MinIO | http://localhost:9001 | `minioadmin` / `minioadmin` |
 
-> Nota: el Postgres de dev mapea el puerto **5434** (no 5432) para no chocar con otros Postgres locales, y la API usa **3100** (el 3000 lo usa otro proyecto). Ambos son configurables por env.
+> Nota: el Postgres de dev mapea el puerto **5434** (no 5432) para no chocar con otros Postgres locales, y la API usa **3100** (el 3000 lo usa otro proyecto). El S3/MinIO usa **9002** (el 9000 suele estar ocupado por php-fpm). Todos son configurables por env.
 
 ### 2.2 Acceso a QA y Producción
 

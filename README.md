@@ -102,10 +102,10 @@ La API queda disponible en `http://localhost:3100` y la Swagger UI en `http://lo
 | API + Swagger | http://localhost:3100 `/docs` | — |
 | PostgreSQL | `localhost:5434` (bd/user/pass: `tether`) | — |
 | Redis | `localhost:6379` | — |
-| MinIO (S3) | http://localhost:9000 | `minioadmin` / `minioadmin` |
+| MinIO (S3) | http://localhost:9002 | `minioadmin` / `minioadmin` |
 | Consola MinIO | http://localhost:9001 | `minioadmin` / `minioadmin` |
 
-> **Nota:** el puerto del Postgres dev es el **5434** (no 5432) y la API usa el **3100** (no 3000) para evitar conflictos con otros proyectos locales. Ambos son configurables por variable de entorno.
+> **Nota:** el puerto del Postgres dev es el **5434** (no 5432) y la API usa el **3100** (no 3000) para evitar conflictos con otros proyectos locales. El S3/MinIO usa el **9002** (no el 9000, ocupado por php-fpm/otros servicios). Ambos son configurables por variable de entorno.
 
 ## Ambientes
 
@@ -139,7 +139,7 @@ Archivo de referencia: `apps/backend/.env.example`. La app **falla rápido** al 
 | `REDIS_HOST` / `REDIS_PORT` | No | `localhost` / `6379` | Conexión Redis (BullMQ) |
 | `SHARE_TTL_DAYS` | No | `7` | Días de vida de un share antes de expirar |
 | `MINIO_ENDPOINT` | **Sí** | — | Host del S3/MinIO |
-| `MINIO_PORT` | No | `9000` | Puerto del S3/MinIO |
+| `MINIO_PORT` | No | `9002` | Puerto del S3/MinIO |
 | `MINIO_USE_SSL` | No | `false` | Usar HTTPS contra S3 |
 | `MINIO_ACCESS_KEY` | **Sí** | — | Access key S3 |
 | `MINIO_SECRET_KEY` | **Sí** | — | Secret key S3 |

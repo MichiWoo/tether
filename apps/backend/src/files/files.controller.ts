@@ -61,6 +61,23 @@ export class FilesController {
     return this.filesService.getDownload(user.id, id);
   }
 
+  @Get(':id/preview')
+  @ApiOperation({
+    summary: 'Previsualizar archivo',
+    description:
+      'Devuelve el registro + presigned URL GET con Content-Disposition inline (TTL 1h). Solo si el archivo está UPLOADED.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'downloadUrl con disposición inline para previsualizar',
+    type: FileDownloadResponse,
+  })
+  @ApiResponse({ status: 400, description: 'Archivo aún no subido' })
+  @ApiResponse({ status: 404, description: 'Archivo no encontrado' })
+  getPreview(@CurrentUser() user: JwtUser, @Param('id') id: string): Promise<FileDownloadResponse> {
+    return this.filesService.getPreview(user.id, id);
+  }
+
   @Post(':id/complete')
   @ApiOperation({
     summary: 'Confirmar subida',

@@ -16,6 +16,8 @@ class FilesRepository {
 
   Future<String> getDownloadUrl(String id) => _api.getDownloadUrl(id);
 
+  Future<String> getPreviewUrl(String id) => _api.getPreviewUrl(id);
+
   Future<FileItem> complete(String id) => _api.complete(id);
 
   Future<void> delete(String id) => _api.delete(id);

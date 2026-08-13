@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/realtime/realtime_provider.dart';
 import '../../core/realtime/realtime_service.dart';
+import '../../core/theme/dracula_palette.dart';
 import '../../core/theme/theme_mode_provider.dart';
 import '../auth/domain/models.dart';
 import '../auth/providers/auth_provider.dart';
@@ -187,9 +188,9 @@ class _RealtimeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, label) = switch (status) {
-      RealtimeStatus.connected => (Colors.green, 'En línea'),
-      RealtimeStatus.connecting => (Colors.amber, 'Conectando…'),
-      RealtimeStatus.disconnected => (Colors.redAccent, 'Sin conexión'),
+      RealtimeStatus.connected => (StatusColors.success(context), 'En línea'),
+      RealtimeStatus.connecting => (StatusColors.warning(context), 'Conectando…'),
+      RealtimeStatus.disconnected => (StatusColors.danger(context), 'Sin conexión'),
     };
 
     return Tooltip(

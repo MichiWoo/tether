@@ -13,6 +13,8 @@ import '../../helpers/fake_realtime_service.dart';
 void main() {
   late FakeClipboardRepository repository;
   late FakeRealtimeService realtime;
+  late FakeClipboardWriter writer;
+  late MemoryDeviceStorage storage;
   late ClipboardController controller;
 
   ClipboardItem item(String id, String content, {String? source}) => ClipboardItem(
@@ -29,8 +31,11 @@ void main() {
           (ref) => ClipboardController(
             repository: repository,
             realtime: realtime,
+            storage: storage,
+            clipboard: writer,
           ),
         ),
+        clipboardWriterProvider.overrideWithValue(writer),
         devicesControllerProvider.overrideWith(
           (ref) => DevicesController(
             repository: FakeDevicesRepository(),
@@ -46,7 +51,14 @@ void main() {
   setUp(() {
     repository = FakeClipboardRepository();
     realtime = FakeRealtimeService();
-    controller = ClipboardController(repository: repository, realtime: realtime);
+    writer = FakeClipboardWriter();
+    storage = MemoryDeviceStorage()..saveDeviceId('local-device');
+    controller = ClipboardController(
+      repository: repository,
+      realtime: realtime,
+      storage: storage,
+      clipboard: writer,
+    );
   });
 
   tearDown(() => controller.dispose());

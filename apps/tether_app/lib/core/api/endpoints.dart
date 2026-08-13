@@ -17,6 +17,7 @@ abstract final class Endpoints {
   static String deviceHeartbeat(String id) => '/devices/$id/heartbeat';
   static String fileById(String id) => '/files/$id';
   static String fileComplete(String id) => '/files/$id/complete';
+  static String filePreview(String id) => '/files/$id/preview';
   static String shareById(String id) => '/shares/$id';
   static String shareAccept(String id) => '/shares/$id/accept';
   static String shareDownloaded(String id) => '/shares/$id/downloaded';

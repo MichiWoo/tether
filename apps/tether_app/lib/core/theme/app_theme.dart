@@ -1,28 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-const _seedColor = Color(0xFF4F6BED);
+import 'dracula_palette.dart';
 
-/// Tema claro de Tether (Material 3).
+/// Tema claro de Tether (Alucard Classic, Dracula light).
 ThemeData buildLightTheme() {
   final base = ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(seedColor: _seedColor),
+    colorScheme: buildAlucardColorScheme(),
   );
   return base.copyWith(
     textTheme: GoogleFonts.interTextTheme(base.textTheme),
   );
 }
 
-/// Tema oscuro de Tether (Material 3).
+/// Tema oscuro de Tether (Dracula Classic).
 ThemeData buildDarkTheme() {
   final base = ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: Brightness.dark,
-    ),
+    colorScheme: buildDraculaColorScheme(),
   );
   return base.copyWith(
     textTheme: GoogleFonts.interTextTheme(base.textTheme),

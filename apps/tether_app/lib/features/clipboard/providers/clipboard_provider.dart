@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_provider.dart';
 import '../../../core/realtime/realtime_provider.dart';
 import '../../../core/realtime/realtime_service.dart';
+import '../../../core/storage/device_storage.dart';
+import '../../../core/storage/device_storage_provider.dart';
 import '../data/clipboard_api.dart';
 import '../data/clipboard_repository.dart';
+import '../data/clipboard_writer.dart';
 import '../domain/clipboard_item.dart';
 
 final clipboardApiProvider = Provider<ClipboardApi>(
@@ -15,26 +18,40 @@ final clipboardRepositoryProvider = Provider<ClipboardRepository>(
   (ref) => ClipboardRepository(ref.watch(clipboardApiProvider)),
 );
 
+final clipboardWriterProvider = Provider<ClipboardWriter>(
+  (ref) => ClipboardWriter(),
+);
+
 class ClipboardState {
   const ClipboardState({
     required this.items,
     this.isLoading = false,
     this.error,
+    this.autoCopiedItem,
   });
 
   final List<ClipboardItem> items;
   final bool isLoading;
   final String? error;
 
+  /// Último item copiado automáticamente al recibirlo de otro dispositivo
+  /// (para que la UI muestre un aviso). Se limpia con [clearAutoCopied].
+  final ClipboardItem? autoCopiedItem;
+
   ClipboardState copyWith({
     List<ClipboardItem>? items,
     bool? isLoading,
     String? error,
     bool clearError = false,
+    ClipboardItem? autoCopiedItem,
+    bool clearAutoCopied = false,
   }) => ClipboardState(
         items: items ?? this.items,
         isLoading: isLoading ?? this.isLoading,
         error: clearError ? null : error ?? this.error,
+        autoCopiedItem: clearAutoCopied
+            ? null
+            : autoCopiedItem ?? this.autoCopiedItem,
       );
 }
 
@@ -43,12 +60,18 @@ final clipboardControllerProvider =
       (ref) => ClipboardController(
         repository: ref.watch(clipboardRepositoryProvider),
         realtime: ref.watch(realtimeServiceProvider),
+        storage: ref.watch(deviceStorageProvider),
+        clipboard: ref.watch(clipboardWriterProvider),
       )..init(),
     );
 
 class ClipboardController extends StateNotifier<ClipboardState> {
-  ClipboardController({required this.repository, required this.realtime})
-    : super(const ClipboardState(items: [])) {
+  ClipboardController({
+    required this.repository,
+    required this.realtime,
+    required this.storage,
+    required this.clipboard,
+  }) : super(const ClipboardState(items: [])) {
     _cancelUpdated = realtime.onEvent(
       RealtimeEvents.clipboardUpdated,
       _onClipboardUpdated,
@@ -57,6 +80,8 @@ class ClipboardController extends StateNotifier<ClipboardState> {
 
   final ClipboardRepository repository;
   final RealtimeService realtime;
+  final DeviceStorage storage;
+  final ClipboardWriter clipboard;
   late final void Function() _cancelUpdated;
 
   @override
@@ -100,7 +125,7 @@ class ClipboardController extends StateNotifier<ClipboardState> {
     }
   }
 
-  void _onClipboardUpdated(dynamic payload) {
+  Future<void> _onClipboardUpdated(dynamic payload) async {
     final raw = payload is Map ? payload : const <String, dynamic>{};
     final itemRaw = raw['item'];
     if (itemRaw is! Map) return;
@@ -111,5 +136,23 @@ class ClipboardController extends StateNotifier<ClipboardState> {
     if (!exists) {
       state = state.copyWith(items: [item, ...state.items]);
     }
+    await _autoCopy(item);
+  }
+
+  /// Copia el contenido al portapapeles del sistema si viene de otro
+  /// dispositivo (no del propio, para evitar copiar el eco del emisor).
+  Future<void> _autoCopy(ClipboardItem item) async {
+    final localId = await storage.readDeviceId();
+    if (localId != null && item.sourceDeviceId == localId) return;
+
+    final ok = await clipboard.writeText(item.content);
+    if (ok) {
+      state = state.copyWith(autoCopiedItem: item);
+    }
+  }
+
+  /// Limpia el aviso de auto-copiado (lo llama la UI tras mostrarlo).
+  void clearAutoCopied() {
+    state = state.copyWith(clearAutoCopied: true);
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:super_clipboard/super_clipboard.dart';
 
 import '../domain/clipboard_item.dart';
 import '../providers/clipboard_provider.dart';
@@ -42,21 +41,14 @@ class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
   }
 
   Future<void> _copy(ClipboardItem item) async {
-    final systemClipboard = SystemClipboard.instance;
-    if (systemClipboard == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('El portapapeles no está disponible.')),
-        );
-      }
-      return;
-    }
-    final itemWriter = DataWriterItem();
-    itemWriter.add(Formats.plainText(item.content));
-    await systemClipboard.write([itemWriter]);
+    final ok = await ref.read(clipboardWriterProvider).writeText(item.content);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Copiado en este dispositivo.')),
+        SnackBar(
+          content: Text(
+            ok ? 'Copiado en este dispositivo.' : 'El portapapeles no está disponible.',
+          ),
+        ),
       );
     }
   }
@@ -64,6 +56,18 @@ class _ClipboardScreenState extends ConsumerState<ClipboardScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(clipboardControllerProvider);
+
+    // Avisa cuando un item llegó de otro dispositivo y se auto-copió.
+    ref.listen<ClipboardState>(clipboardControllerProvider, (previous, next) {
+      final item = next.autoCopiedItem;
+      if (item != null && item.id != previous?.autoCopiedItem?.id) {
+        final source = item.sourceDeviceName ?? 'otro dispositivo';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Copiado de $source.')),
+        );
+        ref.read(clipboardControllerProvider.notifier).clearAutoCopied();
+      }
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

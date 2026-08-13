@@ -104,6 +104,32 @@ describe('FilesService', () => {
     });
   });
 
+  describe('getPreview', () => {
+    it('pide la URL con disposición inline', async () => {
+      prisma.fileRecord.findFirst.mockResolvedValue({
+        ...file,
+        status: 'UPLOADED',
+        uploadedAt: new Date(),
+      });
+      storage.getPresignedDownloadUrl.mockResolvedValue('http://preview');
+
+      const result = await service.getPreview('u1', 'f1');
+
+      expect(result.downloadUrl).toBe('http://preview');
+      expect(storage.getPresignedDownloadUrl).toHaveBeenCalledWith(
+        'users/u1/f1/foto.jpg',
+        'foto.jpg',
+        expect.any(Number),
+        'inline',
+      );
+    });
+
+    it('lanza 400 si el archivo no está UPLOADED', async () => {
+      prisma.fileRecord.findFirst.mockResolvedValue(file);
+      await expect(service.getPreview('u1', 'f1')).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
   describe('complete', () => {
     it('lanza 400 si el objeto no existe en storage', async () => {
       prisma.fileRecord.findFirst.mockResolvedValue(file);
@@ -136,7 +162,7 @@ describe('FilesService', () => {
       storage.deleteObject.mockResolvedValue(undefined);
       prisma.fileRecord.findFirst.mockResolvedValue(file);
       await service.remove('u1', 'f1');
-      expect(storage.deleteObject).toHaveBeenCalledWith('users/u1/f1');
+      expect(storage.deleteObject).toHaveBeenCalledWith('users/u1/f1/foto.jpg');
       expect(prisma.fileRecord.delete).toHaveBeenCalledWith({
         where: { id: 'f1' },
       });

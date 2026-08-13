@@ -151,6 +151,17 @@ class FakeUploadService extends UploadService {
     onProgress?.call(0.5);
     onProgress?.call(1.0);
   }
+
+  String? textContent;
+  bool failFetchText = false;
+
+  @override
+  Future<String> fetchText(String url) async {
+    if (failFetchText) {
+      throw DioException(requestOptions: RequestOptions(path: url));
+    }
+    return textContent ?? '';
+  }
 }
 
 /// SharesRepository con comportamiento controlado para tests.

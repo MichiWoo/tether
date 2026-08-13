@@ -23,7 +23,7 @@ export class StorageService implements OnModuleInit {
 
   constructor(configService: ConfigService) {
     const endpoint = configService.get<string>('MINIO_ENDPOINT', 'localhost');
-    const port = configService.get<string>('MINIO_PORT', '9000');
+    const port = configService.get<string>('MINIO_PORT', '9002');
     const useSsl = configService.get<boolean>('MINIO_USE_SSL', false) === true;
     this.bucket = configService.get<string>('MINIO_BUCKET', 'tether');
 
@@ -62,6 +62,7 @@ export class StorageService implements OnModuleInit {
     key: string,
     filename: string,
     expiresIn = DEFAULT_EXPIRES_DOWNLOAD,
+    disposition: 'attachment' | 'inline' = 'attachment',
   ): Promise<string> {
     const safeName = filename.replace(/"/g, '');
     return getSignedUrl(
@@ -69,7 +70,7 @@ export class StorageService implements OnModuleInit {
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: key,
-        ResponseContentDisposition: `attachment; filename="${safeName}"`,
+        ResponseContentDisposition: `${disposition}; filename="${safeName}"`,
       }),
       { expiresIn },
     );

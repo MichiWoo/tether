@@ -10,7 +10,7 @@ export const envValidationSchema = Joi.object({
   REDIS_PORT: Joi.number().port().default(6379),
   SHARE_TTL_DAYS: Joi.number().integer().min(1).default(7),
   MINIO_ENDPOINT: Joi.string().required(),
-  MINIO_PORT: Joi.number().port().default(9000),
+  MINIO_PORT: Joi.number().port().default(9002),
   MINIO_USE_SSL: Joi.boolean().default(false),
   MINIO_ACCESS_KEY: Joi.string().required(),
   MINIO_SECRET_KEY: Joi.string().required(),

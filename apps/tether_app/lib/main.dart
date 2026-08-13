@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
+import 'core/tray/tray_service.dart';
 
 bool get _isDesktop =>
     !kIsWeb &&
@@ -29,6 +30,8 @@ Future<void> main() async {
       await windowManager.show();
       await windowManager.focus();
     });
+
+    await TrayService().init();
   }
 
   runApp(const ProviderScope(child: TetherApp()));

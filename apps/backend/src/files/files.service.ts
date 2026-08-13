@@ -32,7 +32,7 @@ export class FilesService {
     });
 
     const uploadUrl = await this.storage.getPresignedUploadUrl(
-      objectKey(userId, file.id),
+      objectKey(userId, file.id, file.name),
       file.mimeType ?? 'application/octet-stream',
     );
 
@@ -57,14 +57,27 @@ export class FilesService {
   }
 
   async getDownload(userId: string, fileId: string): Promise<FileDownloadResponse> {
+    return this.getFileUrl(userId, fileId, 'attachment');
+  }
+
+  async getPreview(userId: string, fileId: string): Promise<FileDownloadResponse> {
+    return this.getFileUrl(userId, fileId, 'inline');
+  }
+
+  private async getFileUrl(
+    userId: string,
+    fileId: string,
+    disposition: 'attachment' | 'inline',
+  ): Promise<FileDownloadResponse> {
     const file = await this.findOwnedFile(userId, fileId);
     if (file.status !== FileStatus.UPLOADED) {
       throw new BadRequestException('File is not uploaded yet');
     }
     const downloadUrl = await this.storage.getPresignedDownloadUrl(
-      objectKey(userId, file.id),
+      objectKey(userId, file.id, file.name),
       file.name,
       DOWNLOAD_URL_TTL,
+      disposition,
     );
     return {
       file: toFileResponse(file),
@@ -79,7 +92,7 @@ export class FilesService {
       return toFileResponse(file);
     }
 
-    const exists = await this.storage.objectExists(objectKey(userId, fileId));
+    const exists = await this.storage.objectExists(objectKey(userId, fileId, file.name));
     if (!exists) {
       throw new BadRequestException('Upload no encontrado en el storage');
     }
@@ -94,8 +107,8 @@ export class FilesService {
   }
 
   async remove(userId: string, fileId: string): Promise<{ success: true }> {
-    await this.findOwnedFile(userId, fileId);
-    await this.storage.deleteObject(objectKey(userId, fileId)).catch(() => undefined);
+    const file = await this.findOwnedFile(userId, fileId);
+    await this.storage.deleteObject(objectKey(userId, fileId, file.name)).catch(() => undefined);
     await this.prisma.fileRecord.delete({ where: { id: fileId } });
     return { success: true };
   }

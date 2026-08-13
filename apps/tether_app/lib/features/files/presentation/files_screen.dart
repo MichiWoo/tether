@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
+import '../../../core/theme/dracula_palette.dart';
 import '../domain/file_item.dart';
 import '../providers/downloads_provider.dart';
 import '../providers/files_provider.dart';
 import '../providers/shares_provider.dart';
+import 'file_preview.dart';
 import 'shares_section.dart';
 
 /// Pantalla Archivos: sube/descarga archivos del cloud y los comparte entre
@@ -142,6 +144,8 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
     );
   }
 
+  void _preview(FileItem file) => showFilePreview(context, ref, file);
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(filesControllerProvider);
@@ -209,6 +213,9 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
                               final file = state.files[index];
                               return _FileTile(
                                 file: file,
+                                onPreview: file.isUploaded
+                                    ? () => _preview(file)
+                                    : null,
                                 onDownload: file.isUploaded
                                     ? () => _download(file)
                                     : null,
@@ -331,12 +338,14 @@ class _DropZone extends StatelessWidget {
 class _FileTile extends StatelessWidget {
   const _FileTile({
     required this.file,
+    this.onPreview,
     this.onDownload,
     this.onShare,
     required this.onDelete,
   });
 
   final FileItem file;
+  final VoidCallback? onPreview;
   final VoidCallback? onDownload;
   final VoidCallback? onShare;
   final VoidCallback onDelete;
@@ -357,6 +366,7 @@ class _FileTile extends StatelessWidget {
 
     return ListTile(
       leading: Icon(_icon, color: colors.primary),
+      onTap: onPreview,
       title: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -623,7 +633,7 @@ class _ShareDialog extends ConsumerWidget {  const _ShareDialog({required this.f
                     device.isOnline ? 'En línea' : 'Desconectado',
                     style: textTheme.bodySmall?.copyWith(
                       color: device.isOnline
-                          ? Colors.green
+                          ? StatusColors.success(context)
                           : colors.onSurfaceVariant,
                     ),
                   ),

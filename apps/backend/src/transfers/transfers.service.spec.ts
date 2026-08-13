@@ -110,7 +110,7 @@ describe('TransfersService', () => {
         where: { id: { in: ['s1'] } },
         data: { status: 'EXPIRED' },
       });
-      expect(mocks.storage.deleteObject).toHaveBeenCalledWith('users/u1/f1');
+      expect(mocks.storage.deleteObject).toHaveBeenCalledWith('users/u1/f1/a.bin');
       expect(mocks.prisma.fileRecord.delete).toHaveBeenCalledWith({ where: { id: 'f1' } });
       expect(mocks.realtime.emitToUser).toHaveBeenCalledWith('u1', 'share.expired', {
         shareId: 's1',

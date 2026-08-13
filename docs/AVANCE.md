@@ -2,13 +2,13 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 12/08/2026 (sesión actual — foco en Flutter; iteración 4 descargas con progreso lista)
+> **Última actualización:** 12/08/2026 (sesión actual — foco en Flutter; iteración 6 tray + autostart lista)
 
 ## Estado general
 
 | Fase | Backend | App Flutter | Estado |
 |---|---|---|---|
-| **1. MVP (cloud)** | Completado | Iteración 4 lista (cola de descargas) | En desarrollo |
+| **1. MVP (cloud)** | Completado | Iteración 6 lista (tray + autostart) | En desarrollo |
 | 2. P2P LAN | — | — | Pendiente |
 | 3. Sin internet (Bluetooth) | — | — | Pendiente |
 | 4. Monetización | — | — | Pendiente |
@@ -24,8 +24,7 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 | **Auth** | registro/login, JWT access + refresh rotativo con **reuse detection** (revoca todos), logout | ✅ |
 | **Devices** | CRUD de dispositivos propios, estado online/offline (heartbeat + WebSocket) | ✅ |
 | **Clipboard** | push/pull de texto, historial, dedupe por `contentHash` (unique index + catch P2002) | ✅ |
-| **Files** | presigned URLs S3/MinIO (upload/descarga directa cliente↔S3), `complete` verifica en S3, TTL | ✅ |
-| **Realtime** | Gateway Socket.IO en `/realtime`, auth JWT en handshake, rooms por usuario/device, eventos en vivo | ✅ |
+| **Files** | presigned URLs S3/MinIO (upload/descarga directa cliente↔S3), `complete` verifica en S3, TTL | ✅ || **Realtime** | Gateway Socket.IO en `/realtime`, auth JWT en handshake, rooms por usuario/device, eventos en vivo | ✅ |
 | **Transfers** | shares de archivos con **BullMQ** (cola `transfers`), eventos `share.*`, TTL de expiración que limpia S3 | ✅ |
 | **Storage** | Cliente S3/MinIO (global), bucket auto-creado, presigned URLs | ✅ |
 | **Health** | `/health` con checks de dependencias (`database`, `redis`, `storage`) | ✅ |
@@ -47,7 +46,11 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 
 ### Infraestructura de dev
 
-`docker-compose.yml`: Postgres 16 (`:5434`), Redis 7 (`:6379`), MinIO (`:9000`/`:9001`). La API corre en `:3100`.
+`docker-compose.yml`: Postgres 16 (`:5434`), Redis 7 (`:6379`), MinIO (`:9002` S3 / `:9001` consola). La API corre en `:3100`.
+
+> **Fix (12/08/2026):** MinIO se movió de `:9000` a `:9002` porque el `:9000` estaba ocupado por php-fpm en el loopback IPv4 (`127.0.0.1:9000`), lo que hacía que el PUT presignado del app fallara con "Error de red al subir" cuando resolvía `localhost` por IPv4. También se mejoró el mensaje de error de subida en la app para distinguir conexión vs firma (403) vs otros HTTP.
+
+> **Key de S3 (12/08/2026):** ahora incluye el nombre del archivo para que sea reconocible en la consola de MinIO: `users/{userId}/{fileId}/{nombre-sanitizado}` (ej. `.../foto.jpg`). Antes era solo `users/{userId}/{fileId}`. Los objetos existentes se migraron; el nombre real sigue viviendo en la BD (`files.name`), y la descarga usa `Content-Disposition`.
 
 ### Enlaces
 
@@ -128,14 +131,73 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - `flutter analyze` limpio y `flutter test`: **70 tests** (+6 de `DownloadsController`: inicio/progreso/remoción, error, cancel, dismiss y descargas en paralelo).
 - `flutter build macos --debug` OK.
 
+## 2e. App Flutter — iteración 5 auto-copiado de portapapeles (completada)
+
+### Auto-copiar en el dispositivo destino
+
+- **`ClipboardWriter`** (`data/clipboard_writer.dart`): abstracción de `super_clipboard` con `writeText()` que devuelve `bool` sin lanzar (inyectable/fake-able).
+- **`ClipboardController`** ahora inyecta `DeviceStorage` y `ClipboardWriter`. Al recibir `clipboard.updated`, **auto-copia** el contenido **solo si viene de otro dispositivo** (compara `sourceDeviceId` con el `deviceId` local, evitando el eco del emisor).
+- **`ClipboardState.autoCopiedItem`** + `clearAutoCopied()`: aviso para la UI; la pantalla lo detecta con `ref.listen` y muestra "Copiado de {device}".
+- **`ClipboardScreen`**: el copiado manual (`_copy`) reutiliza `ClipboardWriter` (antes duplicaba la lógica de `super_clipboard`).
+
+### Calidad
+
+- `flutter analyze` limpio y `flutter test`: **73 tests** (+3 del auto-copiado: copia de otro device, ignora el propio, `clearAutoCopied`).
+- `flutter build macos --debug` OK.
+
+## 2f. App Flutter — iteración 6 tray + autostart (completada)
+
+### Icono de bandeja + minimizar a bandeja + arrancar al iniciar sesión
+
+- **`TrayService`** (`core/tray/tray_service.dart`): inicializa el icono de bandeja (`tray_manager`, icono template `assets/tray_icon.png`), menú contextual **Mostrar / Abrir al iniciar sesión (checkbox) / Salir**, y `setPreventClose(true)` para **minimizar a bandeja** al cerrar la ventana (`onWindowClose` → `hide`). `buildTrayMenu` es una función pura testeable.
+- **`AutostartService`** (`core/autostart/autostart_service.dart`): canal nativo `tether/autostart` implementado en `MainFlutterWindow.swift` (LaunchAgent en `~/Library/LaunchAgents/com.tether.app.plist`). **Sin dependencias de Swift Package Manager** (se descartó `launch_at_startup` porque requiere agregar `LaunchAtLogin` por Xcode).
+- **`AppDelegate.swift`**: `applicationShouldTerminateAfterLastWindowClosed` → `false` para que la app siga viva en bandeja.
+- **`main.dart`**: inicializa `TrayService` solo en desktop.
+
+### Calidad
+
+- `flutter analyze` limpio y `flutter test`: **76 tests** (+3 de `buildTrayMenu`: estructura, estado del checkbox, callbacks).
+- `flutter build macos --debug` OK (compila el Swift nativo y registra `tray_manager`).
+- Pendiente de verificación en runtime (requiere GUI): icono de bandeja visible y autostart real tras reiniciar sesión.
+
+## 2g. App Flutter — vista previa de archivos (completada)
+
+### Preview de imágenes y texto (clic en el archivo)
+
+- **Backend**: `GET /files/:id/preview` devuelve presigned URL con `Content-Disposition: inline` (nuevo parámetro `disposition` en `StorageService.getPresignedDownloadUrl`; `FilesService.getPreview` reusa la lógica de `getDownload`).
+- **App**: `showFilePreview` + `FilePreviewDialog` (`file_preview.dart`) — diálogo modal al hacer clic en el tile:
+  - **Imágenes** (`image/*`): `Image.network` con loading/error.
+  - **Texto** (`text/*`, JSON, XML, JS, etc.): `UploadService.fetchText` y panel con scroll + `SelectableText` mono.
+  - **Otros** (pdf/video/audio): metadata (tamaño, tipo, fecha).
+- `FilesApi.getPreviewUrl` / `FilesRepository` / `FilesController.getPreviewUrl` + endpoint `filePreview`.
+- `_FileTile` gana `onTap` → preview (solo archivos subidos), sin romper las acciones existentes.
+
+### Calidad
+
+- Backend: **36 tests** (+2 de `getPreview`) y lint/build OK.
+- App: `flutter analyze` limpio y `flutter test`: **80 tests** (+4 de `file_preview`: clasificación, texto, error, metadata).
+- `flutter build macos --debug` OK.
+
+## 2h. App Flutter — paleta Dracula (completada)
+
+### Tema Dracula Classic (dark) + Alucard Classic (light)
+
+- **`core/theme/dracula_palette.dart`**: constantes exactas del spec de Dracula (`https://draculatheme.com/spec`) + `buildDraculaColorScheme()` (dark) y `buildAlucardColorScheme()` (light) como `ColorScheme` Material 3. Containers derivados por `Color.alphaBlend` sobre el fondo.
+- **`core/theme/app_theme.dart`**: tema oscuro = Dracula Classic, tema claro = Alucard Classic (primario púrpura `#BD93F9`); conserva Inter y Material 3.
+- **Indicadores de estado theme-aware** (`StatusColors.success/info/warning/danger`): badge de conexión en `home_shell`, estados de share en `shares_section`, dot online en `_ShareDialog` y badge "En línea" en `devices_screen` (antes `Colors.green/blue/amber`).
+
+### Calidad
+
+- `flutter analyze` limpio, `flutter test` **80 tests** OK, `flutter build macos --debug` OK.
+
 ## 3. Pendientes / próximos pasos
 
 ### App Flutter (siguiente)
 - [x] **Iteración 2**: pantallas de **Devices** (lista con online/offline, registro, renombrar, eliminar) y **Clipboard** (enviar texto + historial + updates en vivo, `device:identify`).
 - [x] **Iteración 3**: **Files** con drag & drop (`desktop_drop`), upload con progreso (presigned PUT), shares y descargas.
 - [x] Progreso de descarga visible por archivo (hoy solo snackbar) y cola de descargas.
-- [ ] Auto-copiar en el dispositivo destino al recibir `clipboard.updated` (hoy el copiado es manual con `super_clipboard`).
-- [ ] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
+- [x] Auto-copiar en el dispositivo destino al recibir `clipboard.updated` (hoy el copiado es manual con `super_clipboard`).
+- [x] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
 - [ ] **Mobile** (iOS/Android) después de estabilizar desktop.
 
 ### Backend / operación

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:tether_app/features/clipboard/data/clipboard_api.dart';
 import 'package:tether_app/features/clipboard/data/clipboard_repository.dart';
+import 'package:tether_app/features/clipboard/data/clipboard_writer.dart';
 import 'package:tether_app/features/clipboard/domain/clipboard_item.dart';
 
 /// ClipboardRepository con comportamiento controlado para tests.
@@ -35,4 +36,17 @@ class FakeClipboardRepository extends ClipboardRepository {
 
 class FakeClipboardApi extends ClipboardApi {
   FakeClipboardApi() : super(Dio());
+}
+
+/// ClipboardWriter en memoria para tests.
+class FakeClipboardWriter extends ClipboardWriter {
+  final List<String> written = [];
+  bool failWrite = false;
+
+  @override
+  Future<bool> writeText(String text) async {
+    if (failWrite) return false;
+    written.add(text);
+    return true;
+  }
 }
