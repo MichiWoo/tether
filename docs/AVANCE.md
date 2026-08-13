@@ -2,13 +2,13 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 12/08/2026 (cierre de sesión — iteración 3 Files/Transfers lista)
+> **Última actualización:** 12/08/2026 (sesión actual — foco en Flutter; iteración 4 descargas con progreso lista)
 
 ## Estado general
 
 | Fase | Backend | App Flutter | Estado |
 |---|---|---|---|
-| **1. MVP (cloud)** | Completado | Iteración 3 lista (Files + Compartidos) | En desarrollo |
+| **1. MVP (cloud)** | Completado | Iteración 4 lista (cola de descargas) | En desarrollo |
 | 2. P2P LAN | — | — | Pendiente |
 | 3. Sin internet (Bluetooth) | — | — | Pendiente |
 | 4. Monetización | — | — | Pendiente |
@@ -113,12 +113,27 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - **Smoke test end-to-end real** contra backend local: register → device → create file → PUT MinIO (200) → complete (UPLOADED) → descarga idéntica → share broadcast + dirigido con `senderDeviceId` correcto → accept → downloaded → listado con el campo nuevo.
 - Backend: build, lint y **27 tests** OK tras la migración.
 
+## 2d. App Flutter — iteración 4 cola de descargas (completada)
+
+### Descargas con progreso y cola
+
+- **`DownloadsController`** (`providers/downloads_provider.dart`): estado con `List<DownloadTask>`; `start()` lanza descargas **en paralelo** (barra por archivo), `cancel()` usa `CancelToken` y `dismiss()` descarta errores.
+- **`UploadService.download`** ahora acepta `cancelToken` y `onProgress` (antes solo existía el parámetro de progreso sin usar).
+- **UI**: sección `_DownloadsSection` sobre el `TabBar` de Archivos — visible desde ambas pestañas (Mis archivos y Compartidos) — con `_DownloadTile` (barra `LinearProgressIndicator`, ✕ para cancelar en curso o descartar errores), mismo estilo que `_UploadTile`.
+- **Mis archivos**: `_download` ya no usa snackbar para progreso; delega en `DownloadsController.start` y avisa solo en error.
+- **Compartidos**: mismo flujo vía `DownloadsController`; al éxito se preserva `markDownloaded(share.id)`.
+
+### Calidad
+
+- `flutter analyze` limpio y `flutter test`: **70 tests** (+6 de `DownloadsController`: inicio/progreso/remoción, error, cancel, dismiss y descargas en paralelo).
+- `flutter build macos --debug` OK.
+
 ## 3. Pendientes / próximos pasos
 
 ### App Flutter (siguiente)
 - [x] **Iteración 2**: pantallas de **Devices** (lista con online/offline, registro, renombrar, eliminar) y **Clipboard** (enviar texto + historial + updates en vivo, `device:identify`).
 - [x] **Iteración 3**: **Files** con drag & drop (`desktop_drop`), upload con progreso (presigned PUT), shares y descargas.
-- [ ] Progreso de descarga visible por archivo (hoy solo snackbar) y cola de descargas.
+- [x] Progreso de descarga visible por archivo (hoy solo snackbar) y cola de descargas.
 - [ ] Auto-copiar en el dispositivo destino al recibir `clipboard.updated` (hoy el copiado es manual con `super_clipboard`).
 - [ ] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
 - [ ] **Mobile** (iOS/Android) después de estabilizar desktop.
@@ -135,6 +150,9 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 
 | Commit | Descripción |
 |---|---|
+| `314e28e` | App Flutter: dashboard y pantallas (devices/clipboard/files/compartidos) + tests |
+| `03e24dc` | App Flutter: menús y dashboard, backend `senderDeviceId` en shares, AVANCE actualizado |
+| `a5505f6` | Skills y workflow de Flutter (expert-flutter, testing, animations) |
 | `2c422e1` | docs: documento de avance del proyecto (AVANCE.md) |
 | `b2bb84b` | App Flutter base desktop (auth JWT, realtime, tema, shell) |
 | `a425607` | Skills de agente |
