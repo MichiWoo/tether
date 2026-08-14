@@ -2,13 +2,13 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 13/08/2026 (sesión actual — rediseño de identidad + migración completa a shadcn_flutter)
+> **Última actualización:** 13/08/2026 (sesión actual — mobile Android primera pasada + entorno Android)
 
 ## Estado general
 
 | Fase | Backend | App Flutter | Estado |
 |---|---|---|---|
-| **1. MVP (cloud)** | Completado | Iteración 7 (UI shadcn + identidad) | En desarrollo |
+| **1. MVP (cloud)** | Completado | Iteración 8 (mobile Android) | En desarrollo |
 | 2. P2P LAN | — | — | Pendiente |
 | 3. Sin internet (Bluetooth) | — | — | Pendiente |
 | 4. Monetización | — | — | Pendiente |
@@ -237,6 +237,41 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - `flutter analyze` limpio, `flutter test` **80 tests** OK (se ajustaron `devices_screen_test` — `find.byIcon(Icons.more_horiz)` y `Key('name-input')` — y `files_screen_test` — `shadcn.LinearProgressIndicator`), `flutter build macos --debug` OK.
 - **Sigue Material** (transitorio, sin impacto visual fuerte): `RefreshIndicator` (pull-to-refresh) y `CircularProgressIndicator` de carga.
 
+## 2k. App Flutter — iteración 8 Mobile Android (primera pasada, mínima viable)
+
+### Entorno Android (desbloqueo)
+
+- Instalado **Android SDK Platform 36 + Build-Tools 28.0.3/36** (`sdkmanager`) y aceptadas licencias (`flutter doctor` en verde).
+- **JDK 17** instalado vía Homebrew (`openjdk@17`) y configurado con `flutter config --jdk-dir` + `JAVA_HOME` en `.zshrc`. El JBR de Android Studio es Java 25, incompatible con Gradle 8.x (por eso fallaba el build).
+- **Android Gradle actualizado** al stack que soporta Flutter 3.47 sin romper plugins Rust (`super_clipboard` → `super_native_extensions` → `irondash_engine_context`/CargoKit): `settings.gradle.kts` + `build.gradle.kts` + `app/build.gradle.kts` (Kotlin DSL), **Gradle 8.14**, **AGP 8.11.1**, **Kotlin 2.2.20**. (AGP 9.1/Gradle 9.3, el default de la plantilla, rompe CargoKit porque `Project.exec()` se eliminó en Gradle 9.)
+
+### Adaptación mobile (sin romper desktop)
+
+- **`core/platform/platform_info.dart`**: `isDesktop` / `isMobile` / `isAndroid`; `main.dart` reutiliza el helper (window/tray solo en desktop).
+- **`files_screen.dart`**: `DropTarget` (drag & drop) ahora solo se monta en desktop (`if (isDesktop)`); en mobile queda el picker `file_selector.openFiles`.
+- **`home_shell.dart`**: shell responsive — en `isMobile` se usa `NavigationBar` inferior con las 3 secciones (en vez de la `_Sidebar` fija), reutilizando `_Section`.
+- **Descargas en Android**: `features/files/data/download_path.dart` (`resolveDownloadPath` + `persistDownload`) — Android no tiene escritura directa a carpetas públicas (scoped storage), así que descarga a un temporal (`getTemporaryDirectory`) y luego abre el diálogo **"guardar como" (SAF)** con `flutter_file_dialog` para que el usuario elija dónde; muestra snackbar con la ruta. Desktop/iOS siguen con `getSaveLocation`.
+- **Config nativa**: `AndroidManifest.xml` (`INTERNET` + `usesCleartextTraffic` + label "Tether"); `Info.plist` (`NSAllowsLocalNetworking` para http://localhost en dev).
+
+### Fix descarga en emulador (URL S3)
+
+- **Problema**: la presigned URL de MinIO apuntaba a `http://localhost:9002`, que desde el emulador es el propio emulador (no el Mac) → `Error de red al descargar`.
+- **Fix**: `MINIO_ENDPOINT=localhost` → `MINIO_ENDPOINT=192.168.1.69` (IP LAN del Mac) en `apps/backend/.env` + reiniciar el backend. La presigned URL ahora usa `192.168.1.69:9002`, alcanzable desde el emulador y desde desktop. (No se puede reescribir `localhost→10.0.2.2` en la app porque la firma SigV4 incluye el host.)
+- **Debug**: añadido `debugPrint` de la excepción real en `downloads_provider.dart` (antes se tragaba en catches genéricos).
+
+## 2l. Iconos de la app (logo Tether)
+
+- **`scripts/generate_icons.py`** (Pillow, ya disponible): genera todos los iconos desde `assets/icon_source.png` (logo 1254×1254) con ~6% de margen y fondo transparente.
+- Generados: **macOS Dock** (`AppIcon.appiconset/app_icon_16..1024`), **Android launcher** (`mipmap-*/ic_launcher` 48–192), **iOS** (`AppIcon.appiconset` completo) y **tray/menú** (`assets/tray_icon.png` como silueta monocroma template).
+- Reemplaza los iconos por defecto de Flutter. Re-ejecutar con `python3 scripts/generate_icons.py` al cambiar el logo.
+- Nota: macOS cachea el icono del Dock/Finder; si no refresca, `killall Dock` y `killall Finder`.
+
+### Calidad / estado
+
+- `flutter analyze` limpio, `flutter test` **80 tests** OK, `flutter build apk --debug` **OK** (`app-debug.apk`), `flutter build macos --debug` OK (desktop no regresionó).
+- **Restricciones mobile** (a documentar/handled): sin tray, sin autostart, sin monitoreo de portapapeles en background; subida/descarga en foreground.
+- **Pendiente mobile**: validar en emulador/dispositivo real, recibir shares (`receive_sharing_intent`) y compartir (`share_plus`), y el equivalente iOS (Xcode listo pero no validado). Nota: desde el emulador usar `--dart-define=API_BASE_URL=http://10.0.2.2:3100`. Riesgo: la IP LAN (`192.168.1.69`) es por DHCP — si cambia, actualizar `.env`.
+
 ## 3. Pendientes / próximos pasos
 
 ### App Flutter (siguiente)
@@ -245,7 +280,7 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - [x] Progreso de descarga visible por archivo (hoy solo snackbar) y cola de descargas.
 - [x] Auto-copiar en el dispositivo destino al recibir `clipboard.updated` (hoy el copiado es manual con `super_clipboard`).
 - [x] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
-- [ ] **Mobile** (iOS/Android) después de estabilizar desktop.
+- [x] **Mobile** (iOS/Android) — primera pasada Android (compila APK; falta validar en emulador y share sheet).
 - [x] Decidir si se migra el resto de la UI a shadcn_flutter (tras validar el pilot).
 
 ### Backend / operación
