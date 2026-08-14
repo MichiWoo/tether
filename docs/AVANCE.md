@@ -2,7 +2,7 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 13/08/2026 (sesión actual — mobile Android primera pasada + entorno Android)
+> **Última actualización:** 14/08/2026 (sesión actual — iOS primera pasada + commit mobile/iconos)
 
 ## Estado general
 
@@ -270,7 +270,13 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 
 - `flutter analyze` limpio, `flutter test` **80 tests** OK, `flutter build apk --debug` **OK** (`app-debug.apk`), `flutter build macos --debug` OK (desktop no regresionó).
 - **Restricciones mobile** (a documentar/handled): sin tray, sin autostart, sin monitoreo de portapapeles en background; subida/descarga en foreground.
-- **Pendiente mobile**: validar en emulador/dispositivo real, recibir shares (`receive_sharing_intent`) y compartir (`share_plus`), y el equivalente iOS (Xcode listo pero no validado). Nota: desde el emulador usar `--dart-define=API_BASE_URL=http://10.0.2.2:3100`. Riesgo: la IP LAN (`192.168.1.69`) es por DHCP — si cambia, actualizar `.env`.
+- **Pendiente mobile**: recibir shares (`receive_sharing_intent`) y compartir (`share_plus`), y validación de iOS en device real. Nota: desde el emulador Android usar `--dart-define=API_BASE_URL=http://10.0.2.2:3100` (en el simulador iOS `localhost` apunta al Mac directamente). Riesgo: la IP LAN (`192.168.1.69`) es por DHCP — si cambia, actualizar `.env`.
+
+## 2m. App Flutter — iOS (primera pasada)
+
+- **`flutter build ios --simulator --debug` OK** y app corriendo en el simulador (iPhone 16 Pro). Flutter 3.47 aplicó la migración automática a **UIScene lifecycle** (`AppDelegate.swift`, `Info.plist` con `UIApplicationSceneManifest`, `Podfile`, `project.pbxproj`, `AppFrameworkInfo.plist`, min iOS 15) — commiteada.
+- Sin código nuevo: el soporte mobile ya era genérico (`isMobile`/`isAndroid`, `SafeArea`, shell con `NavigationBar`, descargas con `getSaveLocation` en iOS).
+- Nota: los plugins `device_info_plus`, `flutter_secure_storage`, `irondash_engine_context` y `super_native_extensions` aún usan CocoaPods (aviso de SPM, no bloquea).
 
 ## 3. Pendientes / próximos pasos
 
@@ -280,7 +286,7 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - [x] Progreso de descarga visible por archivo (hoy solo snackbar) y cola de descargas.
 - [x] Auto-copiar en el dispositivo destino al recibir `clipboard.updated` (hoy el copiado es manual con `super_clipboard`).
 - [x] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
-- [x] **Mobile** (iOS/Android) — primera pasada Android (compila APK; falta validar en emulador y share sheet).
+- [x] **Mobile** (iOS/Android) — primera pasada (Android APK + iOS simulador).
 - [x] Decidir si se migra el resto de la UI a shadcn_flutter (tras validar el pilot).
 
 ### Backend / operación
