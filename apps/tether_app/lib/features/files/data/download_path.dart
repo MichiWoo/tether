@@ -9,11 +9,12 @@ import '../../../core/platform/platform_info.dart';
 
 /// Ruta donde se descarga el archivo antes de persistirlo.
 ///
-/// En Android se descarga a un archivo temporal y después se abre el diálogo
-/// "guardar como" (SAF), porque no hay escritura directa a carpetas públicas.
-/// En desktop/iOS la ruta ya es la definitiva (`getSaveLocation`).
+/// En móvil (Android/iOS) se descarga a un archivo temporal y después se abre
+/// el diálogo "guardar como" (`flutter_file_dialog`): SAF en Android y
+/// document picker en iOS. En desktop la ruta ya es la definitiva
+/// (`getSaveLocation`).
 Future<String?> resolveDownloadPath(String name) async {
-  if (isAndroid) {
+  if (isMobile) {
     final dir = await getTemporaryDirectory();
     return p.join(dir.path, name);
   }
@@ -21,13 +22,13 @@ Future<String?> resolveDownloadPath(String name) async {
   return location?.path;
 }
 
-/// Persiste la descarga temporal en Android vía el diálogo "guardar como".
+/// Persiste la descarga temporal en móvil vía el diálogo "guardar como".
 ///
 /// Devuelve la ruta final elegida por el usuario, o `null` si canceló. En
-/// desktop/iOS la ruta ya es la definitiva y se devuelve tal cual. El archivo
+/// desktop la ruta ya es la definitiva y se devuelve tal cual. El archivo
 /// temporal se elimina al terminar (éxito o cancelación).
 Future<String?> persistDownload(String tempPath, String name) async {
-  if (!isAndroid) return tempPath;
+  if (!isMobile) return tempPath;
 
   final String? saved;
   try {

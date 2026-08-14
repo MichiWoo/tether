@@ -62,7 +62,7 @@ class _SharesTabState extends ConsumerState<SharesTab> {
           );
       if (ok) {
         final finalPath = await persistDownload(tempPath, name);
-        if (isAndroid && finalPath != null && mounted) {
+        if (isMobile && finalPath != null && mounted) {
           messenger.showSnackBar(
             SnackBar(content: Text('Guardado en: $finalPath')),
           );

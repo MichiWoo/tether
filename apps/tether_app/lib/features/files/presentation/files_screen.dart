@@ -104,7 +104,7 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
         );
     if (ok) {
       final finalPath = await persistDownload(tempPath, file.name);
-      if (isAndroid && finalPath != null && mounted) {
+      if (isMobile && finalPath != null && mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text('Guardado en: $finalPath')),
         );

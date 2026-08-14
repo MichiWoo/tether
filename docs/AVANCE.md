@@ -275,7 +275,8 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 ## 2m. App Flutter — iOS (primera pasada)
 
 - **`flutter build ios --simulator --debug` OK** y app corriendo en el simulador (iPhone 16 Pro). Flutter 3.47 aplicó la migración automática a **UIScene lifecycle** (`AppDelegate.swift`, `Info.plist` con `UIApplicationSceneManifest`, `Podfile`, `project.pbxproj`, `AppFrameworkInfo.plist`, min iOS 15) — commiteada.
-- Sin código nuevo: el soporte mobile ya era genérico (`isMobile`/`isAndroid`, `SafeArea`, shell con `NavigationBar`, descargas con `getSaveLocation` en iOS).
+- Sin código nuevo: el soporte mobile ya era genérico (`isMobile`/`isAndroid`, `SafeArea`, shell con `NavigationBar`).
+- **Fix descargas iOS**: `file_selector.getSaveLocation` no está implementado en iOS (`UnimplementedError`). Se unificó a `isMobile`: descarga a temporal + `flutter_file_dialog.saveFile` (document picker en iOS / SAF en Android); solo desktop usa `getSaveLocation`.
 - Nota: los plugins `device_info_plus`, `flutter_secure_storage`, `irondash_engine_context` y `super_native_extensions` aún usan CocoaPods (aviso de SPM, no bloquea).
 
 ## 3. Pendientes / próximos pasos
