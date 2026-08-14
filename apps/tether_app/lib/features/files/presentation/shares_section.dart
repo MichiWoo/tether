@@ -1,14 +1,15 @@
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
+import '../../../core/platform/platform_info.dart';
 import '../../../core/theme/dracula_palette.dart';
 import '../../../core/widgets/card_tile.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_banner.dart';
+import '../data/download_path.dart';
 import '../domain/share.dart';
 import '../providers/downloads_provider.dart';
 import '../providers/shares_provider.dart';
@@ -50,18 +51,22 @@ class _SharesTabState extends ConsumerState<SharesTab> {
         );
         return;
       }
-      final location = await getSaveLocation(
-        suggestedName: share.file?.name ?? 'archivo',
-      );
-      if (location == null) return;
-
       final name = share.file?.name ?? 'archivo';
+      final tempPath = await resolveDownloadPath(name);
+      if (tempPath == null) return;
+
       final ok = await ref.read(downloadsControllerProvider.notifier).start(
             name: name,
             url: url,
-            savePath: location.path,
+            savePath: tempPath,
           );
       if (ok) {
+        final finalPath = await persistDownload(tempPath, name);
+        if (isAndroid && finalPath != null && mounted) {
+          messenger.showSnackBar(
+            SnackBar(content: Text('Guardado en: $finalPath')),
+          );
+        }
         await ref
             .read(sharesControllerProvider.notifier)
             .markDownloaded(share.id);

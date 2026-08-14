@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/upload_service.dart';
@@ -93,11 +94,13 @@ class DownloadsController extends StateNotifier<DownloadsState> {
       if (CancelToken.isCancel(e)) {
         _remove(id);
       } else {
+        debugPrint('Descarga fallida (red): $e');
         _update(id, (t) => t.copyWith(error: 'Error de red al descargar.'));
       }
       return false;
-    } catch (_) {
+    } catch (e) {
       _tokens.remove(id);
+      debugPrint('Descarga fallida: $e');
       _update(id, (t) => t.copyWith(error: 'No se pudo descargar el archivo.'));
       return false;
     }

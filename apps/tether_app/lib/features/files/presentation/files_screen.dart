@@ -6,12 +6,14 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import '../../devices/domain/device.dart';
 import '../../devices/providers/devices_provider.dart';
+import '../../../core/platform/platform_info.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/dracula_palette.dart';
 import '../../../core/widgets/card_tile.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/tether_dialog.dart';
+import '../data/download_path.dart';
 import '../domain/file_item.dart';
 import '../providers/downloads_provider.dart';
 import '../providers/files_provider.dart';
@@ -92,15 +94,22 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
         .read(filesControllerProvider.notifier)
         .getDownloadUrl(file.id);
     if (!mounted) return;
-    final location = await getSaveLocation(suggestedName: file.name);
-    if (location == null) return;
+    final tempPath = await resolveDownloadPath(file.name);
+    if (tempPath == null) return;
 
     final ok = await ref.read(downloadsControllerProvider.notifier).start(
           name: file.name,
           url: url,
-          savePath: location.path,
+          savePath: tempPath,
         );
-    if (!ok && mounted) {
+    if (ok) {
+      final finalPath = await persistDownload(tempPath, file.name);
+      if (isAndroid && finalPath != null && mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Guardado en: $finalPath')),
+        );
+      }
+    } else if (mounted) {
       messenger.showSnackBar(
         const SnackBar(content: Text('No se pudo descargar el archivo.')),
       );
@@ -169,19 +178,11 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
   Widget build(BuildContext context) {
     final state = ref.watch(filesControllerProvider);
 
-    return DropTarget(
-      enable: true,
-      onDragEntered: (_) => setState(() => _dragging = true),
-      onDragExited: (_) => setState(() => _dragging = false),
-      onDragDone: (details) {
-        setState(() => _dragging = false);
-        _onDrop(details);
-      },
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+    final content = Stack(
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
               _DropZone(onTap: _pickFiles, dragging: _dragging),
               if (state.error != null)
                 Padding(
@@ -257,7 +258,19 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
           // Overlay visual mientras se arrastra un archivo sobre la ventana.
           if (_dragging) _buildDropOverlay(),
         ],
-      ),
+      );
+
+    if (!isDesktop) return content;
+
+    return DropTarget(
+      enable: true,
+      onDragEntered: (_) => setState(() => _dragging = true),
+      onDragExited: (_) => setState(() => _dragging = false),
+      onDragDone: (details) {
+        setState(() => _dragging = false);
+        _onDrop(details);
+      },
+      child: content,
     );
   }
 

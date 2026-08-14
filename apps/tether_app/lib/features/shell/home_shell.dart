@@ -4,6 +4,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import '../../core/realtime/realtime_provider.dart';
 import '../../core/realtime/realtime_service.dart';
+import '../../core/platform/platform_info.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/dracula_palette.dart';
 import '../../core/theme/theme_mode_provider.dart';
@@ -31,6 +32,38 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    if (isMobile) {
+      return Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: _buildContent(),
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _section.index,
+          onDestinationSelected: (index) {
+            setState(() => _section = _Section.values[index]);
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.devices_other_outlined),
+              selectedIcon: Icon(Icons.devices_other),
+              label: 'Dispositivos',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.content_paste_go_outlined),
+              selectedIcon: Icon(Icons.content_paste_go),
+              label: 'Portapapeles',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.folder_copy_outlined),
+              selectedIcon: Icon(Icons.folder_copy),
+              label: 'Archivos',
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       body: Row(
         children: [
