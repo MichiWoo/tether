@@ -153,6 +153,26 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
     );
   }
 
+  Future<void> _shareToApp(FileItem file) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final url = await ref
+          .read(filesControllerProvider.notifier)
+          .getDownloadUrl(file.id);
+      final tempPath = await resolveTempDownloadPath(file.name);
+      await ref
+          .read(uploadServiceProvider)
+          .download(url: url, savePath: tempPath);
+      await ref.read(shareServiceProvider).shareFile(path: tempPath);
+    } catch (_) {
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No se pudo compartir el archivo.')),
+        );
+      }
+    }
+  }
+
   Future<void> _preview(FileItem file) async {
     final String url;
     try {
@@ -246,8 +266,12 @@ class _FilesTabState extends ConsumerState<_FilesTab> {
                                 onDownload: file.isUploaded
                                     ? () => _download(file)
                                     : null,
-                                onShare:
-                                    file.isUploaded ? () => _share(file) : null,
+                                onShareDevice: file.isUploaded
+                                    ? () => _share(file)
+                                    : null,
+                                onShareApp: file.isUploaded
+                                    ? () => _shareToApp(file)
+                                    : null,
                                 onDelete: () => _delete(file),
                               );
                             },
@@ -382,14 +406,16 @@ class _FileTile extends StatelessWidget {
     required this.file,
     this.onPreview,
     this.onDownload,
-    this.onShare,
+    this.onShareDevice,
+    this.onShareApp,
     required this.onDelete,
   });
 
   final FileItem file;
   final VoidCallback? onPreview;
   final VoidCallback? onDownload;
-  final VoidCallback? onShare;
+  final VoidCallback? onShareDevice;
+  final VoidCallback? onShareApp;
   final VoidCallback onDelete;
 
   IconData get _icon {
@@ -430,10 +456,12 @@ class _FileTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (onShare != null)
-            shadcn.IconButton.ghost(
-              icon: const Icon(Icons.ios_share),
-              onPressed: onShare,
+          if (onShareDevice != null || onShareApp != null)
+            Builder(
+              builder: (context) => shadcn.IconButton.ghost(
+                icon: const Icon(Icons.ios_share),
+                onPressed: () => _showShareMenu(context),
+              ),
             ),
           if (onDownload != null)
             shadcn.IconButton.ghost(
@@ -444,6 +472,29 @@ class _FileTile extends StatelessWidget {
             icon: const Icon(Icons.delete_outline),
             onPressed: onDelete,
           ),
+        ],
+      ),
+    );
+  }
+
+  void _showShareMenu(BuildContext context) {
+    shadcn.showDropdown<void>(
+      context: context,
+      follow: false,
+      builder: (_) => shadcn.DropdownMenu(
+        children: [
+          if (onShareDevice != null)
+            shadcn.MenuButton(
+              leading: const Icon(Icons.devices_other_outlined),
+              child: const Text('Con un dispositivo'),
+              onPressed: (_) => onShareDevice!(),
+            ),
+          if (onShareApp != null)
+            shadcn.MenuButton(
+              leading: const Icon(Icons.ios_share),
+              child: const Text('En otra app'),
+              onPressed: (_) => onShareApp!(),
+            ),
         ],
       ),
     );

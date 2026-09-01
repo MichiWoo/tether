@@ -25,6 +25,8 @@ dependencies:
   tray_manager: ^0.5.3
   shadcn_flutter: ^0.0.53
   flutter_file_dialog: ^3.3.2
+  share_plus: ^12.0.2
+  receive_sharing_intent: 1.8.1
 
 dev_dependencies:
   flutter_test:

@@ -4,6 +4,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import '../../core/realtime/realtime_provider.dart';
 import '../../core/realtime/realtime_service.dart';
+import '../../core/navigation/home_section.dart';
 import '../../core/platform/platform_info.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/dracula_palette.dart';
@@ -14,8 +15,6 @@ import '../auth/providers/auth_provider.dart';
 import '../clipboard/presentation/clipboard_screen.dart';
 import '../devices/presentation/devices_screen.dart';
 import '../files/presentation/files_screen.dart';
-
-enum _Section { devices, clipboard, files }
 
 /// Vista principal de la app de escritorio.
 class HomeShell extends ConsumerStatefulWidget {
@@ -28,20 +27,20 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  _Section _section = _Section.clipboard;
-
   @override
   Widget build(BuildContext context) {
+    final section = ref.watch(homeSectionProvider);
     if (isMobile) {
       return Scaffold(
         body: SafeArea(
           bottom: false,
-          child: _buildContent(),
+          child: _buildContent(section),
         ),
         bottomNavigationBar: NavigationBar(
-          selectedIndex: _section.index,
+          selectedIndex: section.index,
           onDestinationSelected: (index) {
-            setState(() => _section = _Section.values[index]);
+            ref.read(homeSectionProvider.notifier).state =
+                HomeSection.values[index];
           },
           destinations: const [
             NavigationDestination(
@@ -68,45 +67,46 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       body: Row(
         children: [
           _Sidebar(
-            selectedIndex: _section.index,
+            selectedIndex: section.index,
             onSelected: (index) {
-              setState(() => _section = _Section.values[index]);
+              ref.read(homeSectionProvider.notifier).state =
+                  HomeSection.values[index];
             },
           ),
           const VerticalDivider(width: 1, thickness: 1),
-          Expanded(child: _buildContent()),
+          Expanded(child: _buildContent(section)),
         ],
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(HomeSection section) {
     return Column(
       children: [
-        _TopBar(user: widget.user, title: _section.title),
+        _TopBar(user: widget.user, title: section.title),
         const Divider(height: 1),
-        Expanded(child: _buildSection()),
+        Expanded(child: _buildSection(section)),
       ],
     );
   }
 
-  Widget _buildSection() {
-    switch (_section) {
-      case _Section.devices:
+  Widget _buildSection(HomeSection section) {
+    switch (section) {
+      case HomeSection.devices:
         return const DevicesScreen();
-      case _Section.clipboard:
+      case HomeSection.clipboard:
         return const ClipboardScreen();
-      case _Section.files:
+      case HomeSection.files:
         return const FilesScreen();
     }
   }
 }
 
-extension on _Section {
+extension on HomeSection {
   String get title => switch (this) {
-        _Section.devices => 'Dispositivos',
-        _Section.clipboard => 'Portapapeles',
-        _Section.files => 'Archivos',
+        HomeSection.devices => 'Dispositivos',
+        HomeSection.clipboard => 'Portapapeles',
+        HomeSection.files => 'Archivos',
       };
 }
 

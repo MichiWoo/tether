@@ -10,6 +10,7 @@ import '../../../core/realtime/realtime_provider.dart';
 import '../../../core/realtime/realtime_service.dart';
 import '../data/files_api.dart';
 import '../data/files_repository.dart';
+import '../data/share_service.dart';
 import '../data/upload_service.dart';
 import '../domain/file_item.dart';
 
@@ -26,6 +27,10 @@ final filesRepositoryProvider = Provider<FilesRepository>(
 
 final uploadServiceProvider = Provider<UploadService>(
   (ref) => UploadService(),
+);
+
+final shareServiceProvider = Provider<ShareService>(
+  (ref) => ShareService(),
 );
 
 /// Estado de una subida individual.

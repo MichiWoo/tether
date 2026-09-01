@@ -113,6 +113,20 @@ void main() {
     expect(find.text('Pendiente'), findsOneWidget);
   });
 
+  testWidgets('el botón compartir ofrece "con un dispositivo" y "en otra app"',
+      (tester) async {
+    filesRepository.files.add(makeFileItem(id: 'f1', name: 'informe.pdf'));
+
+    await tester.pumpWidget(buildApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.ios_share));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Con un dispositivo'), findsOneWidget);
+    expect(find.text('En otra app'), findsOneWidget);
+  });
+
   testWidgets('muestra un share recibido y lo acepta', (tester) async {
     sharesRepository.shares.add(
       makeShare(id: 's1', senderDeviceId: 'otro-device', fileName: 'foto.png'),

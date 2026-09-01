@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/realtime/realtime_provider.dart';
+import 'core/sharing/incoming_shares_provider.dart';
 import 'core/storage/storage_providers.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/shadcn_theme.dart';
@@ -58,6 +59,7 @@ class _Root extends ConsumerWidget {
       children: [
         _RootGate(),
         _SessionBootstrap(),
+        _IncomingSharesBootstrap(),
       ],
     );
   }
@@ -82,6 +84,25 @@ class _SessionBootstrap extends ConsumerWidget {
         );
       } else if (next.status != AuthStatus.authenticating) {
         ref.read(realtimeServiceProvider).disconnect();
+      }
+    });
+    return const SizedBox.shrink();
+  }
+}
+
+/// Activa/desactiva la recepción de contenido compartido desde otras apps
+/// según el estado de la sesión.
+class _IncomingSharesBootstrap extends ConsumerWidget {
+  const _IncomingSharesBootstrap();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<AuthState>(authControllerProvider, (previous, next) {
+      final controller = ref.read(incomingSharesControllerProvider.notifier);
+      if (next.status == AuthStatus.authenticated) {
+        controller.start();
+      } else {
+        controller.stop();
       }
     });
     return const SizedBox.shrink();

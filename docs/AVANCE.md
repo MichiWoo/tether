@@ -2,7 +2,7 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 14/08/2026 (sesión actual — iOS primera pasada + commit mobile/iconos)
+> **Última actualización:** 14/08/2026 (sesión actual — compartir/recibir con otras apps: `share_plus` + `receive_sharing_intent`)
 
 ## Estado general
 
@@ -279,6 +279,31 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - **Fix descargas iOS**: `file_selector.getSaveLocation` no está implementado en iOS (`UnimplementedError`). Se unificó a `isMobile`: descarga a temporal + `flutter_file_dialog.saveFile` (document picker en iOS / SAF en Android); solo desktop usa `getSaveLocation`.
 - Nota: los plugins `device_info_plus`, `flutter_secure_storage`, `irondash_engine_context` y `super_native_extensions` aún usan CocoaPods (aviso de SPM, no bloquea).
 
+## 2n. App Flutter — compartir y recibir con otras apps (mobile)
+
+### Compartir hacia otras apps (`share_plus`)
+
+- **`share_plus 12.0.2`** (la 13.x requiere `win32 ^6`, incompatible con `flutter_secure_storage` 9.x que pide `win32 ^5`).
+- **`ShareService`** (`features/files/data/share_service.dart`): abstracción de `SharePlus.instance.share(ShareParams(...))` con `shareFile`/`shareText`, override-able en tests.
+- **`files_screen.dart`**: el icono `ios_share` de cada archivo ahora abre un menú shadcn (`showDropdown`/`DropdownMenu`) con **"Con un dispositivo"** (diálogo de share existente) y **"En otra app"** (descarga a temporal + `shareFile`). Snackbar en error.
+- `download_path.dart`: nuevo `resolveTempDownloadPath` (temporal en cualquier plataforma).
+
+### Recibir de otras apps (`receive_sharing_intent`, Android)
+
+- **`receive_sharing_intent 1.8.1`** (pin exacto: la 1.9.0 exige `compileSdk 37` + AGP 9.x, incompatible con el stack AGP 8.11.1/Gradle 8.14 del proyecto; además es SPM-only en iOS).
+- **`ReceiveSharingService`** (`core/sharing/receive_sharing_service.dart`): wrapper inyectable de `ReceiveSharingIntent` (`getMediaStream`, `getInitialMedia`, `reset`).
+- **`IncomingSharesController`** (`core/sharing/incoming_shares_provider.dart`): procesa media entrante — texto/URL → `clipboard.push` (con `sourceDeviceId` local); archivos/imágenes/videos → `files.uploadPaths` + navega a Archivos. `start()` consume el intent inicial (cold start) y suscribe al stream; `stop()` al cerrar sesión.
+- **`app.dart`**: `_IncomingSharesBootstrap` orquesta `start()`/`stop()` según `AuthStatus` (cola el intent inicial hasta autenticar).
+- **`core/navigation/home_section.dart`**: `HomeSection` + `homeSectionProvider` (StateProvider) — el shell ya no usa `_section` local; permite saltar a "Archivos" al recibir.
+- **`AndroidManifest.xml`**: `intent-filter`s `SEND`/`SEND_MULTIPLE` para `text/*`, `image/*`, `video/*`, `*/*` y `launchMode="singleTask"`.
+- **`android/build.gradle.kts`**: alineación de `compileOptions` a Java 17 para `receive_sharing_intent` (sin `compileOptions` en el plugin → error "Inconsistent JVM-target compatibility" Java 1.8 vs Kotlin 17).
+
+### Calidad / estado
+
+- `flutter analyze` limpio, `flutter test` **87 tests** (+6 de `IncomingSharesController` +1 widget del menú compartir), `flutter build apk --debug` OK, `flutter build ios --simulator --debug` OK, `flutter build macos --debug` OK (desktop no regresionó).
+- **iOS recibir pendiente**: requiere Share Extension + Swift Package Manager + App Groups (firma), paso manual en Xcode. En iOS hoy funciona compartir (share_plus) pero no recibir.
+- Restricción mobile documentada: el plugin no corre en background; el share entrante se procesa al abrir la app.
+
 ## 3. Pendientes / próximos pasos
 
 ### App Flutter (siguiente)
@@ -289,6 +314,8 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - [x] Sistema tray + autostart (`tray_manager`, `local_notifier`) para estar siempre disponible.
 - [x] **Mobile** (iOS/Android) — primera pasada (Android APK + iOS simulador).
 - [x] Decidir si se migra el resto de la UI a shadcn_flutter (tras validar el pilot).
+- [x] **Recibir shares** (`receive_sharing_intent`) y **compartir** (`share_plus`) en Android.
+- [ ] **Recibir shares en iOS** (Share Extension + SPM + App Groups en Xcode) y validar iOS en device real.
 
 ### Backend / operación
 - [ ] Definir URLs reales de **QA y prod** (hoy placeholders en docs).

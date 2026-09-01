@@ -22,6 +22,13 @@ Future<String?> resolveDownloadPath(String name) async {
   return location?.path;
 }
 
+/// Ruta temporal (independiente de plataforma) para descargar un archivo
+/// antes de compartirlo con otra app o previsualizarlo.
+Future<String> resolveTempDownloadPath(String name) async {
+  final dir = await getTemporaryDirectory();
+  return p.join(dir.path, name);
+}
+
 /// Persiste la descarga temporal en móvil vía el diálogo "guardar como".
 ///
 /// Devuelve la ruta final elegida por el usuario, o `null` si canceló. En
