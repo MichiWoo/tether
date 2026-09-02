@@ -79,3 +79,6 @@ export function createRealtimeService(): RealtimeService {
 
   return { status, connect, identify, disconnect, onEvent };
 }
+
+// Instancia única compartida por toda la app.
+export const realtime = createRealtimeService();
