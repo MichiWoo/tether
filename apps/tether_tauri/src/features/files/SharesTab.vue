@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import {
-  CloudDownload,
-  Inbox,
-  Share2,
-  XCircle,
-} from "@lucide/vue";
+import { CloudDownload, Inbox, Share2, XCircle } from "@lucide/vue";
 import EmptyState from "@/components/ui/EmptyState.vue";
 import CardTile from "@/components/ui/CardTile.vue";
 import UiButton from "@/components/ui/UiButton.vue";
@@ -56,7 +51,14 @@ async function download(share: Share) {
       showToast("El share está expirado.", "error");
       return;
     }
-    const ok = await files.download({ id: share.file?.id ?? share.id, name, mimeType: share.file?.mimeType ?? null, size: share.file?.size ?? 0, status: "UPLOADED", createdAt: share.createdAt });
+    const ok = await files.download({
+      id: share.file?.id ?? share.id,
+      name,
+      mimeType: share.file?.mimeType ?? null,
+      size: share.file?.size ?? 0,
+      status: "UPLOADED",
+      createdAt: share.createdAt,
+    });
     if (ok) {
       await shares.markDownloaded(share.id);
     } else {
@@ -78,18 +80,18 @@ async function cancel(share: Share) {
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-    <div class="flex items-center justify-between px-6 pb-3 pt-1">
-      <div class="flex rounded-xl bg-bg-2 p-1">
+    <div class="flex items-center justify-between border-b border-fg px-5 py-3">
+      <div class="flex border-2 border-fg">
         <button
-          class="rounded-lg px-4 py-1.5 text-sm font-medium transition-colors"
-          :class="filter === 'received' ? 'bg-surface-2 text-fg' : 'text-muted hover:text-fg'"
+          class="px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
+          :class="filter === 'received' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="filter = 'received'"
         >
           Recibidos
         </button>
         <button
-          class="rounded-lg px-4 py-1.5 text-sm font-medium transition-colors"
-          :class="filter === 'sent' ? 'bg-surface-2 text-fg' : 'text-muted hover:text-fg'"
+          class="border-l-2 border-fg px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
+          :class="filter === 'sent' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="filter = 'sent'"
         >
           Enviados
@@ -102,9 +104,7 @@ async function cancel(share: Share) {
         v-if="shares.isLoading && shares.shares.length === 0"
         title="Cargando…"
       >
-        <template #icon>
-          <div class="h-6 w-6 animate-spin rounded-full border-2 border-surface-2 border-t-primary" />
-        </template>
+        <template #icon><div class="dither-50 h-6 w-6 border border-fg" /></template>
       </EmptyState>
 
       <EmptyState
@@ -119,19 +119,20 @@ async function cancel(share: Share) {
         <template #icon><Inbox :size="26" /></template>
       </EmptyState>
 
-      <div v-else class="flex flex-col gap-2 px-6 pb-4">
+      <div v-else class="flex flex-col gap-2 px-5 py-3">
         <CardTile v-for="share in visible" :key="share.id">
           <template #leading>
-            <div class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-surface-2 text-primary">
-              <Share2 :size="18" />
+            <div class="flex h-9 w-9 items-center justify-center border border-fg">
+              <Share2 :size="18" class="text-fg" />
             </div>
           </template>
           <template #title>
-            <span class="truncate text-sm font-medium text-fg">{{ share.file?.name ?? "Archivo" }}</span>
+            <span class="truncate font-mono text-sm text-fg">{{ share.file?.name ?? "Archivo" }}</span>
           </template>
           <template #subtitle>
-            <p class="mt-0.5 text-xs text-muted">
-              {{ filter === 'sent' ? deviceName(share.targetDeviceId) : (deviceName(share.senderDeviceId)) }} · {{ shareStatusLabel(share.status) }}
+            <p class="mt-1 font-mono text-xs text-muted">
+              {{ deviceName(filter === 'sent' ? share.targetDeviceId : share.senderDeviceId) }} ·
+              {{ shareStatusLabel(share.status) }}
             </p>
           </template>
           <template #trailing>
@@ -144,19 +145,19 @@ async function cancel(share: Share) {
             </UiButton>
             <button
               v-if="filter === 'received' && share.status !== 'EXPIRED' && share.status !== 'DOWNLOADED'"
-              class="rounded-md p-2 text-muted hover:bg-surface-2 hover:text-fg"
+              class="border border-fg p-2 hover:bg-surface-2"
               title="Descargar"
               @click="download(share)"
             >
-              <CloudDownload :size="16" />
+              <CloudDownload :size="15" />
             </button>
             <button
               v-if="filter === 'sent' && share.status === 'CREATED'"
-              class="rounded-md p-2 text-muted hover:bg-surface-2 hover:text-fg"
+              class="border border-fg p-2 hover:bg-surface-2"
               title="Cancelar"
               @click="cancel(share)"
             >
-              <XCircle :size="16" />
+              <XCircle :size="15" />
             </button>
           </template>
         </CardTile>

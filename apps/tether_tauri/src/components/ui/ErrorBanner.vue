@@ -5,8 +5,8 @@ defineProps<{ message: string }>();
 </script>
 
 <template>
-  <div class="flex items-start gap-3 rounded-xl bg-destructive/15 px-3.5 py-3 text-sm text-destructive">
+  <div class="flex items-start gap-3 border border-fg bg-fg px-3.5 py-3 text-bg shadow-1bit-sm">
     <TriangleAlert :size="16" class="mt-0.5 shrink-0" />
-    <span class="whitespace-pre-line">{{ message }}</span>
+    <span class="whitespace-pre-line font-mono text-sm">{{ message }}</span>
   </div>
 </template>

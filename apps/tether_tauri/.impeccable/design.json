@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-01T19:30:00Z",
+  "title": "Design System: Tether",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Tinta", "canonical": "#000000", "tonalRamp": ["#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"] },
+      "paper": { "role": "neutral", "displayName": "Papel", "canonical": "#ffffff", "tonalRamp": ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff"] },
+      "muted": { "role": "neutral", "displayName": "Gris atenuado", "canonical": "#787878", "tonalRamp": ["#111111", "#222222", "#444444", "#666666", "#787878", "#999999", "#bbbbbb", "#dddddd"] },
+      "gray-2": { "role": "neutral", "displayName": "Gris de relleno", "canonical": "#dadada", "tonalRamp": ["#222222", "#444444", "#666666", "#999999", "#bbbbbb", "#cccccc", "#dadada", "#eeeeee"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display (Silkscreen)", "purpose": "Títulos de ventana, menú, botones, chips." },
+      "body": { "displayName": "Body (system-ui)", "purpose": "Etiquetas y descripciones." },
+      "mono": { "displayName": "Mono (JetBrains Mono)", "purpose": "Datos, fechas, tamaños, nombres de archivo." }
+    },
+    "shadows": [
+      { "name": "shadow-1bit", "value": "3px 3px 0 #000000", "purpose": "Ventanas y diálogos (desplazamiento sólido de tinta)." },
+      { "name": "shadow-1bit-sm", "value": "2px 2px 0 #000000", "purpose": "Banners de error y toasts." }
+    ],
+    "motion": [
+      { "name": "stripes-slide", "value": "linear 0.9s infinite (background-position 0 -> 17px)", "purpose": "Rayas de barbero para trabajo en curso." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal; inversión tinta sobre papel.",
+      "html": "<button class=\"ds-btn-primary\">ENVIAR</button>",
+      "css": ".ds-btn-primary { background: #000000; color: #ffffff; border: 1px solid #000000; padding: 10px 14px; font-family: Silkscreen, monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; transition: background 0.15s, color 0.15s; } .ds-btn-primary:hover { background: #ffffff; color: #000000; } .ds-btn-primary:focus-visible { outline: 1px solid #000000; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Acción secundaria; borde de tinta sobre papel.",
+      "html": "<button class=\"ds-btn-secondary\">SELECCIONAR</button>",
+      "css": ".ds-btn-secondary { background: #ffffff; color: #000000; border: 1px solid #000000; padding: 10px 14px; font-family: Silkscreen, monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; transition: background 0.15s, color 0.15s; } .ds-btn-secondary:hover { background: #000000; color: #ffffff; } .ds-btn-secondary:focus-visible { outline: 1px solid #000000; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Campo de texto con etiqueta pixel y borde de 1px.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-label\">EMAIL</label><input class=\"ds-input\" placeholder=\"tu@ejemplo.com\" /></div>",
+      "css": ".ds-field { width: 100%; } .ds-label { display: block; margin-bottom: 6px; font-family: Silkscreen, monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #000000; } .ds-input { width: 100%; box-sizing: border-box; background: #ffffff; color: #000000; border: 1px solid #000000; padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 14px; } .ds-input:focus { outline: none; box-shadow: inset 0 0 0 1px #000000; } .ds-input::placeholder { color: #787878; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": "chip-outline",
+      "description": "Estado en línea/desconectado con indicador cuadrado.",
+      "html": "<span class=\"ds-chip\"><span class=\"ds-chip-dot\"></span>EN LÍNEA</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #000000; padding: 2px 8px; font-family: Silkscreen, monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: #000000; } .ds-chip-dot { width: 8px; height: 8px; background: #000000; }"
+    },
+    {
+      "name": "Card Tile",
+      "kind": "card",
+      "refersTo": "card-tile",
+      "description": "Ítem de lista con borde de 1px; selección por inversión.",
+      "html": "<div class=\"ds-card\"><span class=\"ds-card-title\">archivo.pdf</span><span class=\"ds-card-sub\">1.2 MB · Hoy 10:32</span></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 2px; background: #ffffff; color: #000000; border: 1px solid #000000; padding: 12px 16px; } .ds-card-title { font-family: 'JetBrains Mono', monospace; font-size: 14px; } .ds-card-sub { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #787878; } .ds-card:hover { background: #dadada; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "Ventana modal con barra de título invertida y sombra dura.",
+      "html": "<div class=\"ds-dialog\"><div class=\"ds-dialog-title\">ELIMINAR</div><div class=\"ds-dialog-body\">¿Seguro?</div></div>",
+      "css": ".ds-dialog { background: #ffffff; color: #000000; border: 2px solid #000000; box-shadow: 3px 3px 0 #000000; } .ds-dialog-title { background: #000000; color: #ffffff; border-bottom: 1px solid #000000; padding: 10px 16px; font-family: Silkscreen, monospace; font-size: 14px; letter-spacing: 0.06em; text-transform: uppercase; } .ds-dialog-body { padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 14px; }"
+    },
+    {
+      "name": "Progress Bar",
+      "kind": "custom",
+      "refersTo": "progress",
+      "description": "Barra de progreso con relleno de tinta sobre pista bordeada.",
+      "html": "<div class=\"ds-progress\"><div class=\"ds-progress-fill\"></div></div>",
+      "css": ".ds-progress { width: 100%; height: 10px; box-sizing: border-box; border: 1px solid #000000; padding: 1px; background: #ffffff; } .ds-progress-fill { width: 64%; height: 100%; background: #000000; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El escritorio de un solo bit",
+    "overview": "Tether es un escritorio Macintosh clásico de un solo bit, estirado a través de todos tus dispositivos. La interfaz habla en la gramática nativa de copiar y pegar: el portapapeles es el pasteboard, los archivos son ítems del escritorio, los dispositivos son una barra de menú con estado. Todo se dibuja con tinta y papel, con el dither ordenado ocupando el lugar del gris.",
+    "keyCharacteristics": [
+      "Monocromo estricto: tinta y papel, nada más.",
+      "Selección y activo por inversión, no por color.",
+      "Dither ordenado como único gris.",
+      "Bordes de 1px a ángulos rectos; sombras duras sin desenfoque.",
+      "Tipografía pixel para títulos, monoespaciada para datos."
+    ],
+    "rules": [
+      { "name": "The Two-Color Rule", "body": "Solo tinta y papel. Todo gris se produce por dither ordenado.", "section": "colors" },
+      { "name": "The Inversion Rule", "body": "Lo seleccionado, activo o primario se invierte (fondo de tinta, texto de papel).", "section": "colors" },
+      { "name": "The Uppercase-Pixel Rule", "body": "Todo rótulo de control se compone en Silkscreen mayúsculas con tracking.", "section": "typography" },
+      { "name": "The Hard-Shadow Rule", "body": "Cualquier elevación es un desplazamiento sólido de tinta, sin blur.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usar borde de 1px de tinta para toda separación y control.",
+      "Do marcar selección/activo con inversión.",
+      "Do representar gris con dither ordenado.",
+      "Do componer títulos y controles en Silkscreen mayúsculas.",
+      "Do usar sombra dura desplazada para elevación.",
+      "Do respetar prefers-reduced-motion."
+    ],
+    "donts": [
+      "Don't usar radio de esquina distinto de cero.",
+      "Don't introducir un color distinto de tinta/papel.",
+      "Don't usar gradientes, glassmorphism, blur o sombras suaves.",
+      "Don't volver a la tarjeta redondeada con gradiente púrpura del dashboard cloud sync."
+    ]
+  }
+}

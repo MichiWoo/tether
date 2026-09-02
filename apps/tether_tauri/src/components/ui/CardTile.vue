@@ -1,12 +1,15 @@
 <script setup lang="ts">
-defineProps<{ clickable?: boolean }>();
+withDefaults(defineProps<{ clickable?: boolean; selected?: boolean }>(), {
+  clickable: false,
+  selected: false,
+});
 defineEmits<{ (e: "click"): void }>();
 </script>
 
 <template>
   <div
-    class="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors"
-    :class="clickable ? 'cursor-pointer hover:bg-surface-2/50' : ''"
+    class="flex items-center gap-3 border border-fg bg-bg px-4 py-3 transition-colors"
+    :class="selected ? 'bg-fg text-bg' : clickable ? 'cursor-pointer hover:bg-surface-2' : ''"
     @click="$emit('click')"
   >
     <div v-if="$slots.leading" class="shrink-0"><slot name="leading" /></div>

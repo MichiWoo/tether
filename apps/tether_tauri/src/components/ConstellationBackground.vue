@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
 
-// Fondo de constelación: nodos conectados con una "señal" que viaja entre ellos.
-// Portado del CustomPainter de la app Flutter (auth_screen.dart).
+// Fondo de constelación one-bit: nodos y líneas en tinta pura, con una señal
+// (cuadrado hueco) que viaja por las aristas — el "hilo" que conecta tus equipos.
 
 const canvas = ref<HTMLCanvasElement | null>(null);
 let raf = 0;
@@ -21,18 +21,9 @@ const EDGES: Array<[number, number]> = [
   [9, 13], [10, 14], [11, 15], [12, 16],
 ];
 
-function colors(css: CSSStyleDeclaration) {
-  const rgb = (v: string) => {
-    const m = v.match(/[\d.]+/g);
-    return m ? `rgba(${m[0]}, ${m[1]}, ${m[2]}, ALPHA)` : "rgba(255,255,255,ALPHA)";
-  };
-  return {
-    line: rgb(css.getPropertyValue("--border")),
-    primary: rgb(css.getPropertyValue("--primary")),
-    secondary: rgb(css.getPropertyValue("--secondary")),
-    accent: rgb(css.getPropertyValue("--accent")),
-    info: rgb(css.getPropertyValue("--info")),
-  };
+function ink(css: CSSStyleDeclaration): string {
+  const m = css.getPropertyValue("--ink").trim().match(/\d+/g);
+  return m ? `rgb(${m[0]}, ${m[1]}, ${m[2]})` : "rgb(0,0,0)";
 }
 
 function draw(now: number) {
@@ -51,14 +42,14 @@ function draw(now: number) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
-  const t = reducedMotion ? 1 : (now - start) / 3000;
-  const palette = colors(getComputedStyle(document.documentElement));
+  const t = reducedMotion ? 0.6 : (now - start) / 3200;
+  const c = ink(getComputedStyle(document.documentElement));
 
   const pts = NODES.map(([x, y]) => ({ x: x * w, y: y * h }));
-  const nodeColors = [palette.primary, palette.secondary, palette.accent, palette.info];
 
   // Líneas
-  ctx.strokeStyle = palette.line.replace("ALPHA", "0.7");
+  ctx.strokeStyle = c;
+  ctx.globalAlpha = 0.18;
   ctx.lineWidth = 1;
   for (const [a, b] of EDGES) {
     ctx.beginPath();
@@ -67,17 +58,13 @@ function draw(now: number) {
     ctx.stroke();
   }
 
-  // Nodos con pulso
-  for (let i = 0; i < pts.length; i++) {
-    const pulse = 0.5 + 0.5 * Math.sin(2 * Math.PI * (t + i * 0.13));
-    const color = nodeColors[i % nodeColors.length];
-    ctx.fillStyle = color.replace("ALPHA", String(0.3 + 0.45 * pulse));
-    ctx.beginPath();
-    ctx.arc(pts[i].x, pts[i].y, 1.6 + 1.4 * pulse, 0, Math.PI * 2);
-    ctx.fill();
+  // Nodos (cuadrados de tinta)
+  ctx.globalAlpha = 0.5;
+  for (const p of pts) {
+    ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
   }
 
-  // Señal viajera
+  // Señal viajera (cuadrado hueco)
   const segCount = EDGES.length;
   const pos = t * segCount;
   const seg = Math.floor(pos) % segCount;
@@ -86,14 +73,10 @@ function draw(now: number) {
   const b = pts[EDGES[seg][1]];
   const sx = a.x + (b.x - a.x) * local;
   const sy = a.y + (b.y - a.y) * local;
-  ctx.fillStyle = palette.accent.replace("ALPHA", "0.2");
-  ctx.beginPath();
-  ctx.arc(sx, sy, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = palette.accent.replace("ALPHA", "1");
-  ctx.beginPath();
-  ctx.arc(sx, sy, 3, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeRect(sx - 4, sy - 4, 8, 8);
+
+  ctx.globalAlpha = 1;
 
   if (!reducedMotion) raf = requestAnimationFrame(draw);
 }

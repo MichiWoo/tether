@@ -20,5 +20,5 @@ export function initialTheme(): ThemeMode {
   } catch {
     /* ignore */
   }
-  return "dark";
+  return "light";
 }

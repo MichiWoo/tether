@@ -30,10 +30,12 @@ function onInput(event: Event) {
 
 <template>
   <div class="w-full">
-    <label v-if="label" class="mb-1.5 block text-[13px] font-medium text-fg">{{ label }}</label>
+    <label v-if="label" class="mb-1.5 block font-display text-[11px] uppercase tracking-wide text-fg">
+      {{ label }}
+    </label>
     <div
-      class="flex items-center gap-2 rounded-lg border bg-surface px-3 py-2 transition-colors"
-      :class="error ? 'border-destructive' : 'border-border focus-within:border-primary'"
+      class="flex items-center gap-2 border border-fg bg-bg px-3 py-2"
+      :class="error ? 'shadow-[inset_0_0_0_1px_rgb(var(--ink))]' : ''"
     >
       <slot name="leading" />
       <input
@@ -41,7 +43,7 @@ function onInput(event: Event) {
         :value="modelValue"
         :placeholder="placeholder"
         :autofocus="autofocus"
-        class="w-full bg-transparent text-sm text-fg placeholder:text-muted focus:outline-none"
+        class="w-full bg-transparent font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
         @input="onInput"
         @keyup.enter="emit('submit')"
       />
@@ -49,14 +51,15 @@ function onInput(event: Event) {
         v-if="isPassword"
         type="button"
         tabindex="-1"
-        class="text-muted hover:text-fg"
+        class="text-fg"
         @click="showPassword = !showPassword"
       >
         <component :is="showPassword ? EyeOff : Eye" :size="16" />
       </button>
     </div>
-    <p v-if="error" class="mt-1.5 flex items-center gap-1 text-xs text-destructive">
-      <slot name="error">{{ error }}</slot>
+    <p v-if="error" class="mt-1.5 flex items-center gap-1.5 font-mono text-xs text-fg">
+      <span class="inline-block h-2 w-2 bg-fg" />
+      {{ error }}
     </p>
   </div>
 </template>

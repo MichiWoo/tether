@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";import {
+import { onMounted, ref } from "vue";
+import {
   CloudDownload,
   CloudUpload,
   FileText,
@@ -91,20 +92,19 @@ async function confirmShare(targetDeviceId?: string) {
 <template>
   <div class="flex h-full flex-col overflow-hidden">
     <!-- Colas de progreso -->
-    <div v-if="files.downloads.length || files.uploads.length" class="flex flex-col gap-2 px-6 pt-3">
+    <div v-if="files.downloads.length || files.uploads.length" class="flex flex-col gap-2 px-5 pt-3">
       <div
         v-for="t in files.downloads"
         :key="`d-${t.id}`"
-        class="flex items-center gap-3 rounded-xl bg-surface px-4 py-3"
-        :class="t.error ? 'bg-destructive/10' : ''"
+        class="flex items-center gap-3 border border-fg bg-bg px-3 py-2.5"
       >
-        <CloudDownload :size="18" :class="t.error ? 'text-destructive' : 'text-primary'" />
+        <CloudDownload :size="18" class="text-fg" />
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm text-fg">{{ t.name }}</p>
+          <p class="truncate font-mono text-sm text-fg">{{ t.name }}</p>
           <div class="mt-1.5"><ProgressBar :value="t.progress" :error="!!t.error" /></div>
-          <p v-if="t.error" class="mt-1 text-xs text-destructive">{{ t.error }}</p>
+          <p v-if="t.error" class="mt-1 font-mono text-xs text-fg">{{ t.error }}</p>
         </div>
-        <button class="rounded-md p-1.5 text-muted hover:text-fg" @click="files.dismissDownload(t.id)">
+        <button class="border border-fg p-1 hover:bg-surface-2" @click="files.dismissDownload(t.id)">
           <X :size="14" />
         </button>
       </div>
@@ -112,34 +112,33 @@ async function confirmShare(targetDeviceId?: string) {
       <div
         v-for="t in files.uploads"
         :key="`u-${t.id}`"
-        class="flex items-center gap-3 rounded-xl bg-surface px-4 py-3"
-        :class="t.error ? 'bg-destructive/10' : ''"
+        class="flex items-center gap-3 border border-fg bg-bg px-3 py-2.5"
       >
-        <CloudUpload :size="18" :class="t.error ? 'text-destructive' : 'text-primary'" />
+        <CloudUpload :size="18" class="text-fg" />
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm text-fg">{{ t.name }}</p>
+          <p class="truncate font-mono text-sm text-fg">{{ t.name }}</p>
           <div class="mt-1.5"><ProgressBar :value="t.progress" :error="!!t.error" /></div>
-          <p v-if="t.error" class="mt-1 text-xs text-destructive">{{ t.error }}</p>
+          <p v-if="t.error" class="mt-1 font-mono text-xs text-fg">{{ t.error }}</p>
         </div>
-        <button class="rounded-md p-1.5 text-muted hover:text-fg" @click="files.dismissUpload(t.id)">
+        <button class="border border-fg p-1 hover:bg-surface-2" @click="files.dismissUpload(t.id)">
           <X :size="14" />
         </button>
       </div>
     </div>
 
     <!-- Pestañas -->
-    <div class="flex items-center gap-3 px-6 py-3">
-      <div class="flex rounded-xl bg-bg-2 p-1">
+    <div class="flex items-center border-b border-fg px-5 py-3">
+      <div class="flex border-2 border-fg">
         <button
-          class="rounded-lg px-4 py-1.5 text-sm font-medium transition-colors"
-          :class="tab === 'files' ? 'bg-surface-2 text-fg' : 'text-muted hover:text-fg'"
+          class="px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
+          :class="tab === 'files' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="tab = 'files'"
         >
           Mis archivos
         </button>
         <button
-          class="rounded-lg px-4 py-1.5 text-sm font-medium transition-colors"
-          :class="tab === 'shares' ? 'bg-surface-2 text-fg' : 'text-muted hover:text-fg'"
+          class="border-l-2 border-fg px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
+          :class="tab === 'shares' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="tab = 'shares'"
         >
           Compartidos
@@ -147,17 +146,17 @@ async function confirmShare(targetDeviceId?: string) {
       </div>
     </div>
 
-    <div v-if="files.error" class="px-6 pb-3"><ErrorBanner :message="files.error" /></div>
+    <div v-if="files.error" class="px-5 pt-3"><ErrorBanner :message="files.error" /></div>
 
     <!-- Mis archivos -->
     <div v-if="tab === 'files'" class="flex min-h-0 flex-1 flex-col">
-      <div class="px-6 pb-2">
-        <div class="flex items-center justify-between rounded-2xl bg-surface px-5 py-5">
-          <div class="flex items-center gap-4">
-            <CloudUpload :size="36" class="text-primary" />
+      <div class="px-5 pt-3">
+        <div class="dither-25 flex items-center justify-between border border-fg bg-bg px-4 py-4">
+          <div class="flex items-center gap-3">
+            <CloudUpload :size="30" class="text-fg" />
             <div>
-              <p class="text-sm font-semibold text-fg">Arrastra archivos aquí</p>
-              <p class="text-xs text-muted">Se suben automáticamente a tu almacenamiento.</p>
+              <p class="font-display text-xs uppercase tracking-wide text-fg">Arrastra archivos aquí</p>
+              <p class="mt-1 font-mono text-xs text-muted">Se suben a tu almacenamiento.</p>
             </div>
           </div>
           <UiButton variant="secondary" @click="files.pickAndUpload()">Seleccionar</UiButton>
@@ -169,9 +168,7 @@ async function confirmShare(targetDeviceId?: string) {
           v-if="files.isLoading && files.files.length === 0"
           title="Cargando…"
         >
-          <template #icon>
-            <div class="h-6 w-6 animate-spin rounded-full border-2 border-surface-2 border-t-primary" />
-          </template>
+          <template #icon><div class="dither-50 h-6 w-6 border border-fg" /></template>
         </EmptyState>
 
         <EmptyState
@@ -182,47 +179,50 @@ async function confirmShare(targetDeviceId?: string) {
           <template #icon><FolderOpen :size="26" /></template>
         </EmptyState>
 
-        <div v-else class="flex flex-col gap-2 px-6 pb-4">
+        <div v-else class="flex flex-col gap-2 px-5 py-3">
           <CardTile
             v-for="file in files.files"
             :key="file.id"
+            clickable
             @click="filePreviewKind(file.mimeType) === 'image' && download(file)"
           >
             <template #leading>
-              <component :is="fileIcon(file.mimeType)" :size="20" class="text-primary" />
+              <div class="flex h-9 w-9 items-center justify-center border border-fg">
+                <component :is="fileIcon(file.mimeType)" :size="18" class="text-fg" />
+              </div>
             </template>
             <template #title>
-              <span class="truncate text-sm font-medium text-fg">{{ file.name }}</span>
+              <span class="truncate font-mono text-sm text-fg">{{ file.name }}</span>
             </template>
             <template #subtitle>
-              <p class="mt-0.5 font-mono text-xs text-muted">
+              <p class="mt-1 font-mono text-xs text-muted">
                 {{ formatSize(file.size) }} · {{ formatDateTime(file.createdAt) }}
               </p>
-              <p v-if="!isUploaded(file)" class="text-xs text-destructive">Pendiente</p>
+              <p v-if="!isUploaded(file)" class="font-display text-[10px] uppercase text-fg">Pendiente</p>
             </template>
             <template #trailing>
               <button
                 v-if="isUploaded(file)"
-                class="rounded-md p-2 text-muted hover:bg-surface-2 hover:text-fg"
+                class="border border-fg p-2 hover:bg-surface-2"
                 title="Compartir con un dispositivo"
                 @click.stop="openShare(file)"
               >
-                <Share2 :size="15" />
+                <Share2 :size="14" />
               </button>
               <button
                 v-if="isUploaded(file)"
-                class="rounded-md p-2 text-muted hover:bg-surface-2 hover:text-fg"
+                class="border border-fg p-2 hover:bg-surface-2"
                 title="Descargar"
                 @click.stop="download(file)"
               >
-                <CloudDownload :size="15" />
+                <CloudDownload :size="14" />
               </button>
               <button
-                class="rounded-md p-2 text-muted hover:bg-surface-2 hover:text-destructive"
+                class="border border-fg p-2 hover:bg-surface-2"
                 title="Eliminar"
                 @click.stop="deleteFile = file"
               >
-                <Trash2 :size="15" />
+                <Trash2 :size="14" />
               </button>
             </template>
           </CardTile>
@@ -234,23 +234,19 @@ async function confirmShare(targetDeviceId?: string) {
     <SharesTab v-else />
 
     <UiDialog v-if="deleteFile" title="Eliminar archivo" @close="deleteFile = null">
-      <p class="text-sm text-fg">¿Eliminar "{{ deleteFile.name }}" del cloud?</p>
+      <p class="font-mono text-sm text-fg">¿Eliminar "{{ deleteFile.name }}" del cloud?</p>
       <template #actions>
         <UiButton variant="ghost" @click="deleteFile = null">Cancelar</UiButton>
         <UiButton variant="destructive" @click="confirmDelete">Eliminar</UiButton>
       </template>
     </UiDialog>
 
-    <UiDialog
-      v-if="shareFile"
-      :title="`Compartir '${shareFile.name}'`"
-      @close="shareFile = null"
-    >
+    <UiDialog v-if="shareFile" :title="`Compartir '${shareFile.name}'`" @close="shareFile = null">
       <div class="flex flex-col gap-2">
         <CardTile clickable @click="confirmShare()">
-          <template #leading><DeviceIcon platform="WEB" :size="20" class="text-primary" /></template>
-          <template #title><span class="text-sm font-medium text-fg">Todos los dispositivos</span></template>
-          <template #subtitle><p class="text-xs text-muted">Notifica a todos tus dispositivos</p></template>
+          <template #leading><DeviceIcon platform="WEB" :size="18" class="text-fg" /></template>
+          <template #title><span class="font-display text-xs uppercase text-fg">Todos los dispositivos</span></template>
+          <template #subtitle><p class="font-mono text-xs text-muted">Notifica a todos tus dispositivos</p></template>
         </CardTile>
 
         <CardTile
@@ -259,11 +255,11 @@ async function confirmShare(targetDeviceId?: string) {
           clickable
           @click="confirmShare(device.id)"
         >
-          <template #leading><DeviceIcon :platform="device.platform" :size="20" class="text-primary" /></template>
-          <template #title><span class="text-sm font-medium text-fg">{{ device.name }}</span></template>
+          <template #leading><DeviceIcon :platform="device.platform" :size="18" class="text-fg" /></template>
+          <template #title><span class="font-display text-xs uppercase text-fg">{{ device.name }}</span></template>
           <template #subtitle>
-            <p class="text-xs" :class="device.isOnline ? 'text-success' : 'text-muted'">
-              {{ device.isOnline ? "En línea" : "Desconectado" }}
+            <p class="font-mono text-xs" :class="device.isOnline ? 'text-fg' : 'text-muted'">
+              {{ device.isOnline ? "■ En línea" : "□ Desconectado" }}
             </p>
           </template>
         </CardTile>

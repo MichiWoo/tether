@@ -33,10 +33,12 @@ async function send() {
 
 async function copy(item: ClipboardItem) {
   const ok = await writeClipboard(item.content);
-  showToast(ok ? "Copiado en este dispositivo." : "El portapapeles no está disponible.", ok ? "success" : "error");
+  showToast(
+    ok ? "Copiado en este dispositivo." : "El portapapeles no está disponible.",
+    ok ? "success" : "error",
+  );
 }
 
-// Avisa cuando llega un item de otro dispositivo y se auto-copió.
 watch(
   () => clipboard.autoCopied,
   (item) => {
@@ -50,18 +52,18 @@ watch(
 
 <template>
   <div class="flex h-full flex-col">
-    <div class="flex gap-2 px-6 pb-4 pt-1">
+    <div class="flex gap-2 border-b border-fg px-5 py-3">
       <UiInput v-model="text" placeholder="Texto para enviar…" class="flex-1" @submit="send" />
-      <UiButton @click="send"><Send :size="16" /> Enviar</UiButton>
+      <UiButton @click="send"><Send :size="14" /> Enviar</UiButton>
     </div>
 
-    <div v-if="clipboard.error" class="px-6 pb-3">
+    <div v-if="clipboard.error" class="px-5 pt-3">
       <ErrorBanner :message="clipboard.error" />
     </div>
 
     <div class="flex-1 overflow-y-auto">
       <div v-if="clipboard.isLoading && clipboard.items.length === 0" class="flex h-full items-center justify-center">
-        <div class="h-7 w-7 animate-spin rounded-full border-2 border-surface-2 border-t-primary" />
+        <div class="dither-50 h-7 w-7 border border-fg" />
       </div>
 
       <EmptyState
@@ -72,19 +74,19 @@ watch(
         <template #icon><ClipboardPaste :size="26" /></template>
       </EmptyState>
 
-      <div v-else class="flex flex-col gap-2 px-6 pb-4">
+      <div v-else class="flex flex-col gap-2 px-5 py-3">
         <CardTile v-for="item in clipboard.items" :key="item.id" clickable @click="copy(item)">
           <template #title>
-            <p class="line-clamp-3 whitespace-pre-wrap text-sm text-fg">{{ item.content }}</p>
+            <p class="whitespace-pre-wrap font-mono text-sm text-fg">{{ item.content }}</p>
           </template>
           <template #subtitle>
-            <p class="mt-1 text-xs text-muted">
+            <p class="mt-1 font-mono text-xs text-muted">
               {{ item.sourceDeviceName ?? "Desconocido" }} · {{ formatDateTime(item.createdAt) }}
             </p>
           </template>
           <template #trailing>
-            <button class="rounded-md p-2 text-muted hover:bg-surface-2 hover:text-fg" @click.stop="copy(item)">
-              <Copy :size="15" />
+            <button class="border border-fg p-2 hover:bg-surface-2" @click.stop="copy(item)">
+              <Copy :size="14" />
             </button>
           </template>
         </CardTile>

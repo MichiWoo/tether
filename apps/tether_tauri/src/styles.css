@@ -1,53 +1,30 @@
-@import "@fontsource/sora/400.css";
-@import "@fontsource/sora/500.css";
-@import "@fontsource/sora/600.css";
-@import "@fontsource/sora/700.css";
-@import "@fontsource/sora/800.css";
+@import "@fontsource/silkscreen/400.css";
+@import "@fontsource/silkscreen/700.css";
 @import "@fontsource/jetbrains-mono/400.css";
 @import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Dracula Classic (oscuro) */
+/*
+ * One-bit desktop — Tether
+ * Black/white pixels only; ordered dither stands in for gray.
+ * Light = paper ground (default). Dark = the whole world inverted.
+ */
 :root {
-  --bg: 40 42 54; /* #282A36 */
-  --bg-2: 33 34 44; /* #21222C */
-  --bg-3: 25 26 33; /* #191A21 */
-  --surface: 52 55 70; /* #343746 */
-  --surface-2: 68 71 90; /* #44475A (selection) */
-  --fg: 248 248 242; /* #F8F8F2 */
-  --muted: 98 114 164; /* #6272A4 (comment) */
-  --border: 68 71 90; /* #44475A */
-  --primary: 189 147 249; /* #BD93F9 */
-  --primary-fg: 25 26 33; /* #191A21 */
-  --secondary: 139 233 253; /* #8BE9FD */
-  --accent: 255 121 198; /* #FF79C6 */
-  --destructive: 255 85 85; /* #FF5555 */
-  --success: 80 250 123; /* #50FA7B */
-  --warning: 241 250 140; /* #F1FA8C */
-  --info: 139 233 253; /* #8BE9FD */
+  --ink: 0 0 0;
+  --paper: 255 255 255;
+  --muted: 120 120 120;
+  --gray-2: 218 218 218;
 }
 
-/* Alucard Classic (claro) */
-:root.light {
-  --bg: 255 251 235; /* #FFFBEB */
-  --bg-2: 239 237 220; /* #EFEDDC */
-  --bg-3: 255 255 255; /* #FFFFFF */
-  --surface: 239 237 220; /* #EFEDDC */
-  --surface-2: 207 207 222; /* #CFCFDE */
-  --fg: 31 31 31; /* #1F1F1F */
-  --muted: 108 102 75; /* #6C664B */
-  --border: 222 220 207; /* #DEDCCF */
-  --primary: 100 74 201; /* #644AC9 */
-  --primary-fg: 255 255 255;
-  --secondary: 3 106 150; /* #036A96 */
-  --accent: 163 20 77; /* #A3144D */
-  --destructive: 203 58 42; /* #CB3A2A */
-  --success: 20 113 10; /* #14710A */
-  --warning: 132 110 21; /* #846E15 */
-  --info: 3 106 150; /* #036A96 */
+.dark {
+  --ink: 255 255 255;
+  --paper: 0 0 0;
+  --muted: 140 140 140;
+  --gray-2: 44 44 44;
 }
 
 html,
@@ -59,24 +36,89 @@ body,
 }
 
 body {
-  @apply bg-bg text-fg font-sans antialiased;
+  @apply bg-bg text-fg font-sans;
   user-select: none;
   -webkit-user-select: none;
 }
 
+/* Ordered dither as gray — the 1-bit signature. */
+.dither-25 {
+  background-image: radial-gradient(rgb(var(--ink)) 1px, transparent 1.6px);
+  background-size: 6px 6px;
+}
+
+.dither-50 {
+  background-image: repeating-conic-gradient(rgb(var(--ink)) 0 25%, transparent 0 50%);
+  background-size: 6px 6px;
+}
+
+.dither-75 {
+  background-image: radial-gradient(rgb(var(--ink)) 1px, transparent 1.6px);
+  background-size: 3px 3px;
+}
+
+/* Diagonal hatch — for error / caution regions. */
+.hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgb(var(--ink)) 0 1px,
+    transparent 1px 7px
+  );
+}
+
+/* Barber-pole stripes — for work in progress. */
+.stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgb(var(--ink)) 0 6px,
+    transparent 6px 12px
+  );
+  background-size: 200% 200%;
+  animation: stripes-slide 0.9s linear infinite;
+}
+
+/* Same, but on paper (for indicators sitting on an inverted/ink surface). */
+.stripes-paper {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgb(var(--paper)) 0 6px,
+    transparent 6px 12px
+  );
+  background-size: 200% 200%;
+  animation: stripes-slide 0.9s linear infinite;
+}
+
+@keyframes stripes-slide {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 17px 0;
+  }
+}
+
+/* Hard offset shadow — no blur, pure 1-bit depth. */
+.shadow-1bit {
+  box-shadow: 3px 3px 0 rgb(var(--ink));
+}
+
+.shadow-1bit-sm {
+  box-shadow: 2px 2px 0 rgb(var(--ink));
+}
+
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--surface-2)) transparent;
+  scrollbar-color: rgb(var(--ink)) rgb(var(--paper));
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--surface-2));
-  border-radius: 4px;
+  background: rgb(var(--ink));
+  border: 2px solid rgb(var(--paper));
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgb(var(--paper));
 }

@@ -5,33 +5,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Superficies
-        bg: "rgb(var(--bg) / <alpha-value>)",
-        "bg-2": "rgb(var(--bg-2) / <alpha-value>)",
-        "bg-3": "rgb(var(--bg-3) / <alpha-value>)",
-        surface: "rgb(var(--surface) / <alpha-value>)",
-        "surface-2": "rgb(var(--surface-2) / <alpha-value>)",
-        // Texto
-        fg: "rgb(var(--fg) / <alpha-value>)",
+        bg: "rgb(var(--paper) / <alpha-value>)",
+        fg: "rgb(var(--ink) / <alpha-value>)",
         muted: "rgb(var(--muted) / <alpha-value>)",
-        // Bordes
-        border: "rgb(var(--border) / <alpha-value>)",
-        // Acento / funcionales
-        primary: "rgb(var(--primary) / <alpha-value>)",
-        "primary-fg": "rgb(var(--primary-fg) / <alpha-value>)",
-        secondary: "rgb(var(--secondary) / <alpha-value>)",
-        accent: "rgb(var(--accent) / <alpha-value>)",
-        destructive: "rgb(var(--destructive) / <alpha-value>)",
-        success: "rgb(var(--success) / <alpha-value>)",
-        warning: "rgb(var(--warning) / <alpha-value>)",
-        info: "rgb(var(--info) / <alpha-value>)",
+        "surface-2": "rgb(var(--gray-2) / <alpha-value>)",
+        border: "rgb(var(--ink) / <alpha-value>)",
+        primary: "rgb(var(--ink) / <alpha-value>)",
+        "primary-fg": "rgb(var(--paper) / <alpha-value>)",
+        secondary: "rgb(var(--ink) / <alpha-value>)",
+        accent: "rgb(var(--ink) / <alpha-value>)",
+        destructive: "rgb(var(--ink) / <alpha-value>)",
+        success: "rgb(var(--ink) / <alpha-value>)",
+        warning: "rgb(var(--ink) / <alpha-value>)",
+        info: "rgb(var(--ink) / <alpha-value>)",
       },
       fontFamily: {
-        sans: ["Sora", "system-ui", "sans-serif"],
+        sans: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "system-ui", "sans-serif"],
+        display: ["Silkscreen", "system-ui", "sans-serif"],
         mono: ["'JetBrains Mono'", "ui-monospace", "monospace"],
-      },
-      borderRadius: {
-        xl2: "1.25rem",
       },
     },
   },

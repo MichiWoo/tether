@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleAlert, CircleCheck, Info, X } from "@lucide/vue";
+import { TriangleAlert, CircleCheck, Info, X } from "@lucide/vue";
 import { toasts, dismissToast, type ToastKind } from "./toast";
 
 function icon(kind: ToastKind) {
@@ -7,20 +7,9 @@ function icon(kind: ToastKind) {
     case "success":
       return CircleCheck;
     case "error":
-      return CircleAlert;
+      return TriangleAlert;
     default:
       return Info;
-  }
-}
-
-function tone(kind: ToastKind) {
-  switch (kind) {
-    case "success":
-      return "text-success";
-    case "error":
-      return "text-destructive";
-    default:
-      return "text-info";
   }
 }
 </script>
@@ -30,11 +19,11 @@ function tone(kind: ToastKind) {
     <div
       v-for="toast in toasts"
       :key="toast.id"
-      class="pointer-events-auto flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-fg shadow-lg"
+      class="pointer-events-auto flex items-center gap-3 border-2 border-fg bg-bg px-4 py-3 font-mono text-sm text-fg shadow-1bit"
     >
-      <component :is="icon(toast.kind)" :size="16" :class="tone(toast.kind)" />
+      <component :is="icon(toast.kind)" :size="16" />
       <span>{{ toast.message }}</span>
-      <button class="ml-1 text-muted hover:text-fg" @click="dismissToast(toast.id)">
+      <button class="ml-1 text-fg hover:opacity-60" @click="dismissToast(toast.id)">
         <X :size="14" />
       </button>
     </div>

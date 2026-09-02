@@ -7,10 +7,10 @@ const pct = computed(() => Math.min(1, Math.max(0, props.value)) * 100);
 </script>
 
 <template>
-  <div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+  <div class="h-2.5 w-full border border-fg bg-bg p-px">
     <div
-      class="h-full rounded-full transition-all"
-      :class="error ? 'bg-destructive' : 'bg-primary'"
+      class="h-full"
+      :class="error ? 'hatch' : 'bg-fg'"
       :style="{ width: `${pct}%` }"
     />
   </div>
