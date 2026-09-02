@@ -1,0 +1,82 @@
+@import "@fontsource/sora/400.css";
+@import "@fontsource/sora/500.css";
+@import "@fontsource/sora/600.css";
+@import "@fontsource/sora/700.css";
+@import "@fontsource/sora/800.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dracula Classic (oscuro) */
+:root {
+  --bg: 40 42 54; /* #282A36 */
+  --bg-2: 33 34 44; /* #21222C */
+  --bg-3: 25 26 33; /* #191A21 */
+  --surface: 52 55 70; /* #343746 */
+  --surface-2: 68 71 90; /* #44475A (selection) */
+  --fg: 248 248 242; /* #F8F8F2 */
+  --muted: 98 114 164; /* #6272A4 (comment) */
+  --border: 68 71 90; /* #44475A */
+  --primary: 189 147 249; /* #BD93F9 */
+  --primary-fg: 25 26 33; /* #191A21 */
+  --secondary: 139 233 253; /* #8BE9FD */
+  --accent: 255 121 198; /* #FF79C6 */
+  --destructive: 255 85 85; /* #FF5555 */
+  --success: 80 250 123; /* #50FA7B */
+  --warning: 241 250 140; /* #F1FA8C */
+  --info: 139 233 253; /* #8BE9FD */
+}
+
+/* Alucard Classic (claro) */
+:root.light {
+  --bg: 255 251 235; /* #FFFBEB */
+  --bg-2: 239 237 220; /* #EFEDDC */
+  --bg-3: 255 255 255; /* #FFFFFF */
+  --surface: 239 237 220; /* #EFEDDC */
+  --surface-2: 207 207 222; /* #CFCFDE */
+  --fg: 31 31 31; /* #1F1F1F */
+  --muted: 108 102 75; /* #6C664B */
+  --border: 222 220 207; /* #DEDCCF */
+  --primary: 100 74 201; /* #644AC9 */
+  --primary-fg: 255 255 255;
+  --secondary: 3 106 150; /* #036A96 */
+  --accent: 163 20 77; /* #A3144D */
+  --destructive: 203 58 42; /* #CB3A2A */
+  --success: 20 113 10; /* #14710A */
+  --warning: 132 110 21; /* #846E15 */
+  --info: 3 106 150; /* #036A96 */
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  @apply bg-bg text-fg font-sans antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--surface-2)) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--surface-2));
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
