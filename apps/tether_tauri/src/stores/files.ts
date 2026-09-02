@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { ENDPOINTS, fileById, fileComplete, filePreview, http } from "@/core/http";
 import { realtime, RealtimeEvents } from "@/core/realtime";
+import { invoke } from "@tauri-apps/api/core";
 import {
   downloadFile,
   onDownloadProgress,
@@ -63,6 +64,18 @@ export const useFilesStore = defineStore("files", {
       for (const file of picked) {
         await this.upload(file.name, file.path, file.size);
       }
+    },
+
+    // Sube un archivo local por ruta determinando su tamaño (drag & drop).
+    async uploadPath(path: string) {
+      const name = path.split("/").pop() ?? "archivo";
+      let size = 0;
+      try {
+        size = await invoke<number>("file_size", { path });
+      } catch {
+        size = 0;
+      }
+      return this.upload(name, path, size);
     },
 
     async upload(name: string, path: string, size: number) {

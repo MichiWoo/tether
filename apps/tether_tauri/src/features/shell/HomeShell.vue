@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   ClipboardPaste,
+  FileInput,
   FolderOpen,
   LogOut,
   Moon,
@@ -13,15 +15,42 @@ import DevicesScreen from "@/features/devices/DevicesScreen.vue";
 import ClipboardScreen from "@/features/clipboard/ClipboardScreen.vue";
 import FilesScreen from "@/features/files/FilesScreen.vue";
 import { useAuthStore } from "@/stores/auth";
+import { useFilesStore } from "@/stores/files";
 import { useUiStore, type Section } from "@/stores/ui";
 import { realtime } from "@/core/realtime";
 import { userDisplayName } from "@/core/types";
 
 const auth = useAuthStore();
 const ui = useUiStore();
+const filesStore = useFilesStore();
 
 const rtStatus = computed(() => realtime.status.value);
 const menuOpen = ref(false);
+const dragging = ref(false);
+
+let unlistenDrop: UnlistenFn | null = null;
+let unlistenEnter: UnlistenFn | null = null;
+
+// Archivos soltados sobre la ventana (escritorio) → subir a la pestaña Archivos.
+onMounted(async () => {
+  unlistenEnter = await listen<boolean>("file-drop-enter", (event) => {
+    dragging.value = event.payload;
+  });
+  unlistenDrop = await listen<{ paths: string[] }>("file-drop", (event) => {
+    dragging.value = false;
+    void (async () => {
+      for (const path of event.payload.paths) {
+        await filesStore.uploadPath(path);
+      }
+      await filesStore.load();
+    })();
+  });
+});
+
+onBeforeUnmount(() => {
+  unlistenDrop?.();
+  unlistenEnter?.();
+});
 
 const sections: Array<{ key: Section; label: string; icon: typeof ClipboardPaste }> = [
   { key: "devices", label: "Dispositivos", icon: MonitorSmartphone },
@@ -44,7 +73,7 @@ const realtimeBadge = computed(() => {
 </script>
 
 <template>
-  <div class="flex h-full w-full bg-bg">
+  <div class="relative flex h-full w-full bg-bg">
     <!-- Barra lateral -->
     <aside class="flex w-[208px] shrink-0 flex-col bg-bg-2">
       <div class="flex items-center gap-2.5 px-4 pb-3 pt-5">
@@ -130,6 +159,18 @@ const realtimeBadge = computed(() => {
         <ClipboardScreen v-else-if="ui.section === 'clipboard'" />
         <FilesScreen v-else />
       </main>
+    </div>
+
+    <!-- Overlay de arrastre -->
+    <div
+      v-if="dragging"
+      class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center"
+      style="background-color: rgb(var(--primary) / 0.08)"
+    >
+      <div class="flex flex-col items-center gap-3 rounded-2xl border-2 border-primary bg-surface px-8 py-6">
+        <FileInput :size="40" class="text-primary" />
+        <span class="text-base font-medium text-fg">Suelta para subir</span>
+      </div>
     </div>
   </div>
 </template>

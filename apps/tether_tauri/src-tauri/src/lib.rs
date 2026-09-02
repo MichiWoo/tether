@@ -90,6 +90,14 @@ async fn pick_files(app: tauri::AppHandle) -> Result<Vec<PickedFile>, String> {
     Ok(result)
 }
 
+/// Tamaño en bytes de un archivo local (para drops sin metadata previa).
+#[tauri::command]
+fn file_size(path: String) -> Result<u64, String> {
+    std::fs::metadata(&path)
+        .map(|m| m.len())
+        .map_err(|e| e.to_string())
+}
+
 /// Abre el diálogo "guardar como" y devuelve la ruta elegida (o `None`).
 #[tauri::command]
 async fn pick_download_path(
@@ -264,6 +272,7 @@ pub fn run() {
             keyring_delete,
             pick_files,
             pick_download_path,
+            file_size,
             upload_file,
             download_file,
         ])
@@ -278,6 +287,21 @@ pub fn run() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.hide();
+            }
+
+            // Archivos soltados sobre la ventana → reemitir con rutas al frontend.
+            #[cfg(desktop)]
+            {
+                if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Enter { .. }) = event {
+                    let _ = window.emit("file-drop-enter", true);
+                }
+                if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Leave) = event {
+                    let _ = window.emit("file-drop-enter", false);
+                }
+                if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
+                    let _ = window.emit("file-drop", serde_json::json!({ "paths": paths }));
+                    let _ = window.emit("file-drop-enter", false);
+                }
             }
         })
         .run(tauri::generate_context!())
