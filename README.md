@@ -132,6 +132,8 @@ La app usa `VITE_API_BASE_URL` (ver `apps/tether_tauri/src/core/config.ts`); por
 | Consola MinIO | http://localhost:9001 | `minioadmin` / `minioadmin` |
 
 > **Nota:** el puerto del Postgres dev es el **5434** (no 5432) y la API usa el **3100** (no 3000) para evitar conflictos con otros proyectos locales. El S3/MinIO usa el **9002** (no el 9000, ocupado por php-fpm/otros servicios). Ambos son configurables por variable de entorno.
+>
+> Estos puertos solo se exponen en desarrollo vía `docker-compose.dev.yml`; en el `docker-compose.yml` base la infraestructura queda en una red interna (ver [Despliegue con Docker](#despliegue-con-docker-producción)).
 
 ## Ambientes
 
@@ -141,20 +143,63 @@ La app usa `VITE_API_BASE_URL` (ver `apps/tether_tauri/src/core/config.ts`); por
 | QA / staging | `https://api-qa.tether.app` *placeholder* | Validación de integración |
 | Producción | `https://api.tether.app` *placeholder* | Tráfico real |
 
-Los despliegues de QA/prod usan **las mismas variables de entorno con valores distintos por ambiente**. En QA/prod se usa un Postgres/Redis administrado y S3 de AWS (o MinIO), con buckets separados (`tether-dev`, `tether-qa`, `tether-prod`).
+Los despliegues de QA/prod usan **las mismas variables de entorno con valores distintos por ambiente** (ver [`.env.example`](.env.example) de la raíz). Todo el stack (backend + landing + Postgres + Redis + MinIO) se despliega con Docker Compose en una red interna; solo la landing/nginx queda expuesta al exterior.
+
+## Despliegue con Docker (producción)
+
+El repositorio incluye imágenes multi-stage para el backend y la landing, y un `docker-compose.yml` que orquesta todo el stack en una única red interna.
+
+### Estructura
+
+| Servicio | Imagen | Descripción |
+|---|---|---|
+| `web` | `apps/tether_web/Dockerfile` | nginx que sirve la landing estática (Astro) en `/` y proxya la API + WebSocket a `backend` |
+| `backend` | `apps/backend/Dockerfile` (target `runtime`) | API NestJS en `:3100`, interna (sin puerto al host) |
+| `migrate` | `apps/backend/Dockerfile` (target `build`) | one-shot: `prisma migrate deploy` + `prisma db seed` antes de arrancar el backend |
+| `postgres` / `redis` / `minio` | imágenes oficiales | infraestructura, solo red interna |
+
+### Puesta en marcha
 
 ```bash
-# Deploy de un ambiente
-pnpm --filter @tether/backend build                  # build ESM
-pnpm --filter @tether/backend exec prisma migrate deploy
-node apps/backend/dist/main.js
+# 1. Configurar secretos de despliegue
+cp .env.example .env
+#    → genera JWT_SECRET y REFRESH_TOKEN_SECRET con `openssl rand -hex 48`
+#    → define SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD
+
+# 2. Construir y levantar el stack
+docker compose up -d --build
+
+# 3. Verificar
+curl http://localhost/health
+#   → {"status":"ok", ..., "checks":{"database":"up","redis":"up","storage":"up"}}
 ```
 
-Verificación: `curl https://api.tether.app/health` debe devolver `{"status":"ok",...}` con los checks de dependencias `database`, `redis` y `storage`.
+Al arrancar, el servicio `migrate` aplica las migraciones pendientes y ejecuta el seeder (usuario admin idempotente). `backend` no se levanta hasta que `migrate` termina con éxito y `postgres`/`redis`/`minio` están `healthy`.
+
+### Reverse proxy / TLS
+
+`web` (nginx) escucha en `:80` y es el único servicio con puerto expuesto. En producción, un reverse proxy / edge (por ejemplo **Dokploy**) termina el TLS y apunta al puerto `80` del contenedor `web`. El nginx interno ya routea:
+
+- `/` → landing estática
+- `/docs`, `/docs-json`, `/auth`, `/devices`, `/clipboard`, `/files`, `/shares`, `/stats`, `/health` → `backend:3100`
+- `/realtime` → WebSocket a `backend:3100`
+
+### Desarrollo local
+
+El `docker-compose.yml` deja la infraestructura en red interna (sin puertos al host). Para desarrollo local (conectar desde el host a Postgres/Redis/MinIO), usa el override que re-expone los puertos:
+
+```bash
+pnpm db:up      # docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis minio
+pnpm db:down
+```
+
+### Seeder (usuario admin)
+
+El arranque crea un usuario admin idempotente (`apps/backend/prisma/seed.mjs`) a partir de `SEED_ADMIN_EMAIL`, `SEED_ADMIN_NAME` y `SEED_ADMIN_PASSWORD`. Si el email ya existe, no hace nada.
 
 ## Variables de entorno
 
-Archivo de referencia: `apps/backend/.env.example`. La app **falla rápido** al arrancar si falta una variable obligatoria o es inválida (validación Joi).
+Archivo de referencia (desarrollo): `apps/backend/.env.example`; para despliegue Docker: [`.env.example`](.env.example) en la raíz. La app **falla rápido** al arrancar si falta una variable obligatoria o es inválida (validación Joi).
 
 | Variable | Obligatoria | Default | Descripción |
 |---|---|---|---|
@@ -175,6 +220,9 @@ Archivo de referencia: `apps/backend/.env.example`. La app **falla rápido** al 
 | `REFRESH_TOKEN_SECRET` | **Sí** (≥32 chars) | — | Firma de refresh tokens |
 | `REFRESH_TOKEN_EXPIRES_IN` | No | `30d` | Duración del refresh token |
 | `LOG_LEVEL` | No | `info` | Nivel de logs (pino) |
+| `SEED_ADMIN_EMAIL` | No | `michiwoo.web@gmail.com` | Email del usuario admin creado por el seeder |
+| `SEED_ADMIN_NAME` | No | `Admin` | Nombre del usuario admin |
+| `SEED_ADMIN_PASSWORD` | **Sí** (en prod) | — | Contraseña del usuario admin (seeder de arranque) |
 
 > **Seguridad:** `JWT_SECRET` y `REFRESH_TOKEN_SECRET` deben generarse con `openssl rand -hex 48` y ser **distintos por ambiente**. Nunca subas `.env` al repositorio.
 

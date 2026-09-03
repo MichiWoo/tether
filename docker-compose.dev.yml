@@ -1,0 +1,15 @@
+# Override de desarrollo: expone los servicios de infraestructura al host
+# para el flujo local (pnpm db:up). No se carga en despliegues (Dokploy).
+services:
+  postgres:
+    ports:
+      - '127.0.0.1:5434:5432'
+
+  redis:
+    ports:
+      - '127.0.0.1:6379:6379'
+
+  minio:
+    ports:
+      - '127.0.0.1:9002:9000'
+      - '127.0.0.1:9001:9001'

@@ -7,8 +7,6 @@ services:
       POSTGRES_USER: tether
       POSTGRES_PASSWORD: tether
       POSTGRES_DB: tether
-    ports:
-      - '5434:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -16,13 +14,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
 
   redis:
     image: redis:7-alpine
     container_name: tether-redis
     restart: unless-stopped
-    ports:
-      - '6379:6379'
     volumes:
       - redis_data:/data
     healthcheck:
@@ -30,6 +28,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
 
   minio:
     image: minio/minio:latest
@@ -39,9 +39,6 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - '9002:9000'
-      - '9001:9001'
     volumes:
       - minio_data:/data
     healthcheck:
@@ -49,8 +46,68 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
+
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: build
+    container_name: tether-migrate
+    restart: 'no'
+    env_file: .env
+    command:
+      [
+        'sh',
+        '-c',
+        'pnpm --filter @tether/backend exec prisma migrate deploy && pnpm --filter @tether/backend exec prisma db seed',
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: runtime
+    container_name: tether-backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - internal
+
+  web:
+    build:
+      context: apps/tether_web
+      dockerfile: Dockerfile
+    container_name: tether-web
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - internal
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+
+networks:
+  internal:
+    driver: bridge
