@@ -108,9 +108,21 @@ export function shareStatusLabel(status: ShareStatus): string {
   }
 }
 
+// Respuesta de `GET /stats`.
+export interface Stats {
+  filesUploaded: number;
+  filesTotalSize: number;
+  shares: number;
+  devices: number;
+  clipboardItems: number;
+}
+
 // Respuesta de `POST /files`.
 export interface CreateFileResult {
   file: FileItem;
-  uploadUrl: string;
-  uploadContentType: string;
+  upload: {
+    url: string;
+    method: "PUT";
+    headers: Record<string, string>;
+  };
 }

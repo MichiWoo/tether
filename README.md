@@ -10,6 +10,7 @@ Portapapeles y transferencia de archivos entre tus dispositivos (Windows, Linux,
 - **Archivos** — subida/descarga **directa cliente↔S3/MinIO** con presigned URLs (el servidor no actúa de buffer).
 - **Realtime** — WebSocket (Socket.IO) con rooms por usuario y por dispositivo.
 - **Transferencias** — shares de archivos entre dispositivos con cola BullMQ, eventos en vivo y TTL de expiración que limpia el storage.
+- **Dashboard / estadísticas** — sección "Inicio" con métricas agregadas (archivos subidos, datos transferidos, compartidos, dispositivos, portapapeles) vía `GET /stats`.
 - **API documentada** — OpenAPI/Swagger en `/docs` con todos los schemas.
 
 ## Stack técnico
@@ -17,6 +18,8 @@ Portapapeles y transferencia de archivos entre tus dispositivos (Windows, Linux,
 | Capa | Tecnología |
 |---|---|
 | Backend | **NestJS 11** (Node + TypeScript, ESM) |
+| Cliente desktop | **Tauri 2 + Vue 3** (TypeScript, Tailwind) |
+| Cliente móvil | **Flutter** (referencia funcional) |
 | Base de datos | **PostgreSQL 16** con **Prisma 7** |
 | Realtime | **Socket.IO** |
 | Queues/Jobs | **BullMQ + Redis** |
@@ -47,17 +50,24 @@ Portapapeles y transferencia de archivos entre tus dispositivos (Windows, Linux,
 ```
 Tether/
 ├── apps/
-│   └── backend/              # API NestJS (ESM + TypeScript strict)
-│       ├── prisma/           # Schema y migraciones
-│       ├── src/
-│       │   ├── auth/         # Registro, login, refresh, JWT
-│       │   ├── devices/      # CRUD + estado online
-│       │   ├── clipboard/    # Push/pull de texto + historial
-│       │   ├── files/        # Presigned URLs S3/MinIO
-│       │   ├── transfers/    # Shares + BullMQ + TTL
-│       │   ├── realtime/     # Gateway Socket.IO
-│       │   └── ...
-│       └── test/             # Tests e2e (Supertest)
+│   ├── backend/              # API NestJS (ESM + TypeScript strict)
+│   │   ├── prisma/           # Schema y migraciones
+│   │   ├── src/
+│   │   │   ├── auth/         # Registro, login, refresh, JWT
+│   │   │   ├── devices/      # CRUD + estado online
+│   │   │   ├── clipboard/    # Push/pull de texto + historial
+│   │   │   ├── files/        # Presigned URLs S3/MinIO
+│   │   │   ├── transfers/    # Shares + BullMQ + TTL
+│   │   │   ├── stats/        # Estadísticas agregadas (GET /stats)
+│   │   │   ├── realtime/     # Gateway Socket.IO
+│   │   │   └── ...
+│   │   └── test/             # Tests e2e (Supertest)
+│   ├── tether_tauri/         # Cliente desktop Tauri + Vue 3
+│   │   └── src/
+│   │       ├── features/     # auth, shell, dashboard, devices, clipboard, files
+│   │       ├── stores/       # Pinia (auth, files, shares, stats, ...)
+│   │       └── core/         # http, realtime, theme, types
+│   └── tether_app/           # Cliente Flutter (referencia funcional)
 ├── shared/
 │   ├── protocol/             # DTOs y eventos WS compartidos (futuro)
 │   └── types/                # Tipos TS compartidos (futuro)
@@ -94,6 +104,20 @@ pnpm dev:backend        # → http://localhost:3100
 ```
 
 La API queda disponible en `http://localhost:3100` y la Swagger UI en `http://localhost:3100/docs`.
+
+### App Tauri (desktop)
+
+Cliente de escritorio (macOS/Windows/Linux) en `apps/tether_tauri`, renderizado en el webview de Tauri (HTML/CSS). Requiere [Rust](https://www.rust-lang.org/tools/install) y las [dependencias de Tauri](https://tauri.app/start/prerequisites/) por SO.
+
+```bash
+# App completa (Tauri + Vue): ventana nativa apuntando a la API local
+pnpm --filter @tether/app-tauri dev
+
+# Solo la UI en el navegador (dev rápido, sin shell nativo) → http://localhost:1420
+pnpm --filter @tether/app-tauri dev:web
+```
+
+La app usa `VITE_API_BASE_URL` (ver `apps/tether_tauri/src/core/config.ts`); por defecto apunta a `http://localhost:3100`.
 
 ### Servicios de desarrollo
 
@@ -203,6 +227,11 @@ Todos los endpoints requieren `Authorization: Bearer <accessToken>`, excepto `au
 | POST | `/shares/:id/downloaded` | Marcar como descargado |
 | POST | `/shares/:id/cancel` | Cancelar share |
 
+### Stats
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/stats` | Estadísticas agregadas del usuario: `filesUploaded`, `filesTotalSize` (bytes), `shares`, `devices`, `clipboardItems` |
+
 ### Sistema
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -293,6 +322,12 @@ pnpm --filter @tether/backend build
 pnpm --filter @tether/backend lint
 pnpm --filter @tether/backend test        # unit (Vitest)
 pnpm --filter @tether/backend test:e2e    # e2e (Supertest, requiere infra arriba)
+
+# App Tauri (desktop)
+pnpm --filter @tether/app-tauri dev          # Tauri + Vue (ventana nativa)
+pnpm --filter @tether/app-tauri dev:web      # solo UI en el navegador
+pnpm --filter @tether/app-tauri build        # tauri build (bundle nativo)
+pnpm --filter @tether/app-tauri typecheck    # vue-tsc --noEmit
 
 # Base de datos (Prisma)
 pnpm --filter @tether/backend prisma:generate

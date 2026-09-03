@@ -151,9 +151,11 @@ async function confirmShare(targetDeviceId?: string) {
     <!-- Mis archivos -->
     <div v-if="tab === 'files'" class="flex min-h-0 flex-1 flex-col">
       <div class="px-5 pt-3">
-        <div class="dither-25 flex items-center justify-between border border-fg bg-bg px-4 py-4">
+        <div class="flex items-center justify-between border border-fg bg-bg px-4 py-4">
           <div class="flex items-center gap-3">
-            <CloudUpload :size="30" class="text-fg" />
+            <div class="dither-25 flex h-12 w-12 shrink-0 items-center justify-center border border-fg bg-bg">
+              <CloudUpload :size="24" class="text-fg" />
+            </div>
             <div>
               <p class="font-display text-xs uppercase tracking-wide text-fg">Arrastra archivos aquí</p>
               <p class="mt-1 font-mono text-xs text-muted">Se suben a tu almacenamiento.</p>

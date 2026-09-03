@@ -14,6 +14,7 @@ export const ENDPOINTS = {
   clipboardHistory: "/clipboard/history",
   files: "/files",
   shares: "/shares",
+  stats: "/stats",
 } as const;
 
 export const deviceById = (id: string) => `/devices/${id}`;

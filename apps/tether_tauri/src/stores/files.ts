@@ -96,8 +96,8 @@ export const useFilesStore = defineStore("files", {
           size,
           mimeType: mimeFromName(name),
         });
-        uploadUrl = created.data.uploadUrl;
-        contentType = created.data.uploadContentType;
+        uploadUrl = created.data.upload.url;
+        contentType = created.data.upload.headers["Content-Type"] ?? "application/octet-stream";
         fileId = created.data.file.id;
       } catch {
         this.updateUpload(id, { error: "No se pudo registrar el archivo." });

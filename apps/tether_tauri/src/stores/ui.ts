@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
 import { applyTheme, initialTheme, type ThemeMode } from "@/core/theme";
 
-export type Section = "devices" | "clipboard" | "files";
+export type Section = "home" | "devices" | "clipboard" | "files";
 
 export const useUiStore = defineStore("ui", {
   state: () => ({
     theme: initialTheme() as ThemeMode,
-    section: "clipboard" as Section,
+    section: "home" as Section,
   }),
   actions: {
     toggleTheme() {

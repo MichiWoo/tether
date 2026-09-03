@@ -4,11 +4,13 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   ClipboardPaste,
   FolderOpen,
+  LayoutDashboard,
   LogOut,
   Moon,
   MonitorSmartphone,
   Sun,
 } from "@lucide/vue";
+import DashboardScreen from "@/features/dashboard/DashboardScreen.vue";
 import DevicesScreen from "@/features/devices/DevicesScreen.vue";
 import ClipboardScreen from "@/features/clipboard/ClipboardScreen.vue";
 import FilesScreen from "@/features/files/FilesScreen.vue";
@@ -50,6 +52,7 @@ onBeforeUnmount(() => {
 });
 
 const sections: Array<{ key: Section; label: string; icon: typeof ClipboardPaste }> = [
+  { key: "home", label: "Inicio", icon: LayoutDashboard },
   { key: "devices", label: "Dispositivos", icon: MonitorSmartphone },
   { key: "clipboard", label: "Portapapeles", icon: ClipboardPaste },
   { key: "files", label: "Archivos", icon: FolderOpen },
@@ -149,7 +152,8 @@ const realtimeLabel = computed(() => {
           </div>
         </div>
         <div class="min-h-0 flex-1 overflow-hidden">
-          <DevicesScreen v-if="ui.section === 'devices'" />
+          <DashboardScreen v-if="ui.section === 'home'" />
+          <DevicesScreen v-else-if="ui.section === 'devices'" />
           <ClipboardScreen v-else-if="ui.section === 'clipboard'" />
           <FilesScreen v-else />
         </div>
@@ -161,8 +165,10 @@ const realtimeLabel = computed(() => {
       v-if="dragging"
       class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-bg/60"
     >
-      <div class="dither-50 flex flex-col items-center gap-3 border-2 border-fg bg-bg px-10 py-7 shadow-1bit">
-        <FolderOpen :size="40" class="text-fg" />
+      <div class="flex flex-col items-center gap-3 border-2 border-fg bg-bg px-10 py-7 shadow-1bit">
+        <div class="dither-50 flex h-16 w-16 items-center justify-center border border-fg bg-bg">
+          <FolderOpen :size="28" class="text-fg" />
+        </div>
         <span class="font-display text-sm uppercase tracking-wide text-fg">Suelta para subir</span>
       </div>
     </div>

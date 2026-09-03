@@ -16,6 +16,7 @@ import { ClipboardModule } from './clipboard/clipboard.module.js';
 import { FilesModule } from './files/files.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { TransfersModule } from './transfers/transfers.module.js';
+import { StatsModule } from './stats/stats.module.js';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { TransfersModule } from './transfers/transfers.module.js';
     FilesModule,
     RealtimeModule,
     TransfersModule,
+    StatsModule,
   ],
   controllers: [AppController],
   providers: [

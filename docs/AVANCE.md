@@ -2,7 +2,7 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 14/08/2026 (sesión actual — compartir/recibir con otras apps: `share_plus` + `receive_sharing_intent`)
+> **Última actualización:** 03/09/2026 (cliente Tauri + Vue: tema Dracula en modo oscuro y dashboard de inicio con `GET /stats`)
 
 ## Estado general
 
@@ -303,6 +303,35 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 - `flutter analyze` limpio, `flutter test` **87 tests** (+6 de `IncomingSharesController` +1 widget del menú compartir), `flutter build apk --debug` OK, `flutter build ios --simulator --debug` OK, `flutter build macos --debug` OK (desktop no regresionó).
 - **iOS recibir pendiente**: requiere Share Extension + Swift Package Manager + App Groups (firma), paso manual en Xcode. En iOS hoy funciona compartir (share_plus) pero no recibir.
 - Restricción mobile documentada: el plugin no corre en background; el share entrante se procesa al abrir la app.
+
+## 2o. Cliente Tauri + Vue — tema Dracula y dashboard de inicio (completada)
+
+`apps/tether_tauri` — cliente de escritorio **Tauri 2 + Vue 3** (TypeScript, Tailwind, Pinia). Es el cliente de diseño actual (lenguaje "one-bit"); el Flutter queda como referencia funcional.
+
+### Identidad visual "one-bit"
+
+- Lenguaje de "escritorio de un solo bit" (Mac clásico): tinta/papel, **dither ordenado** como único gris, sombras duras sin blur, esquinas 0px, tipografía pixel **Silkscreen** (títulos) + **JetBrains Mono** (datos) + system-ui (body). Documentado en `apps/tether_tauri/DESIGN.md` y `PRODUCT.md`.
+- Todos los colores fluyen por 4 variables CSS (`--ink`, `--paper`, `--muted`, `--gray-2`) en `src/styles.css`, con modo claro/oscuro que las invierte (`src/core/theme.ts`).
+
+### Tema Dracula (solo colores base)
+
+- Modo oscuro recoloreado a la paleta base de **Dracula** (sin acentos, respetando la regla de dos colores): fondo `#282a36` (`--paper`), tinta `#f8f8f2` (`--ink`), texto secundario `#6272a4` (`--muted`), hover `#44475a` (`--gray-2`). El modo claro queda intacto (negro sobre blanco).
+- Dither, sombras duras, stripes y el fondo de constelación leen `rgb(var(--ink))`/`rgb(var(--paper))`, así que se recolorean automáticamente.
+
+### Dashboard de inicio
+
+- Nueva sección **"Inicio"** como primer ítem del menú y **pantalla por defecto** (`src/stores/ui.ts`, `HomeShell.vue`).
+- `src/features/dashboard/DashboardScreen.vue`: héroe "Datos transferidos" (MB/GB) + 4 conteos (archivos subidos, compartidos, dispositivos, portapapeles), en el lenguaje one-bit.
+- `src/stores/stats.ts` consume `GET /stats`; endpoint y tipo `Stats` añadidos a `core/http.ts` y `core/types.ts`.
+
+### Backend — módulo `stats`
+
+- Nuevo módulo `apps/backend/src/stats/` (`GET /stats`): agrega con Prisma `count`/`aggregate` (suma de `size`) sobre archivos UPLOADED, shares, dispositivos y portapapeles. Registrado en `app.module.ts`; documentado en `docs/API.md` y `README.md`.
+
+### Calidad / estado
+
+- Backend: `nest build` + `eslint` OK. App: `vue-tsc --noEmit` y `vite build` OK.
+- Prerrequisito de la app: Rust + dependencias de Tauri; `pnpm --filter @tether/app-tauri dev` (o `dev:web` para solo la UI en navegador).
 
 ## 3. Pendientes / próximos pasos
 

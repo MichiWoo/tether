@@ -189,6 +189,11 @@ curl -X POST $BASE/files/$FILE_ID/complete -H "Authorization: Bearer $TOK"
 
 TTL de expiración por `SHARE_TTL_DAYS` (default 7). Un job de BullMQ expira los shares vencidos y borra el archivo de S3.
 
+### stats
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/stats` | Estadísticas agregadas del usuario: `filesUploaded`, `filesTotalSize` (bytes), `shares`, `devices`, `clipboardItems` |
+
 ### sistema
 | Método | Ruta | Descripción |
 |---|---|---|

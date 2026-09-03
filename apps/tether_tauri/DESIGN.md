@@ -53,10 +53,13 @@ La identidad rechaza explícitamente el "dashboard cloud sync" genérico: sin ta
 Una paleta de dos colores: tinta sobre papel. El gris es *dither*, no un tercer color.
 
 ### Neutral
-- **Tinta** (`#000000` / `--ink`): texto, bordes, iconos, y el fondo de toda selección o acción primaria. Es el color de dibujo; en modo oscuro invierte a blanco.
-- **Papel** (`#ffffff` / `--paper`): el fondo de la superficie. En modo oscuro invierte a negro.
-- **Gris atenuado** (`#787878` / `--muted`): solo texto secundario (marcas de tiempo, plataformas). El único gris plano permitido para texto.
-- **Gris de relleno** (`#dadada` / `--gray-2`): solo el hover/inactivo de superficies. Nunca un color de acento.
+- **Tinta** (`#000000` / `--ink`): texto, bordes, iconos, y el fondo de toda selección o acción primaria. Es el color de dibujo; en modo oscuro pasa a `#f8f8f2` (foreground de Dracula).
+- **Papel** (`#ffffff` / `--paper`): el fondo de la superficie. En modo oscuro pasa a `#282a36` (background de Dracula).
+- **Gris atenuado** (`#787878` / `--muted`): solo texto secundario (marcas de tiempo, plataformas). El único gris plano permitido para texto. En modo oscuro pasa a `#6272a4` (comment de Dracula).
+- **Gris de relleno** (`#dadada` / `--gray-2`): solo el hover/inactivo de superficies. Nunca un color de acento. En modo oscuro pasa a `#44475a` (current line de Dracula).
+
+### Dark Mode (Dracula)
+El modo oscuro no invierte a negro/blanco; adopta la paleta base de Dracula manteniendo la misma lógica de dos colores (tinta sobre papel, dither e inversión). Los acentos de Dracula (púrpura, cian, verde, rosa, naranja, rojo) no se usan: la selección y el activo siguen marcándose por inversión, no por color.
 
 ### Named Rules
 **The Two-Color Rule.** Solo tinta y papel. Todo "gris" se produce por dither ordenado (`dither-25`, `dither-50`, `dither-75`); los grises planos `muted` y `gray-2` existen únicamente para legibilidad de texto secundario y para hover, y jamás actúan como acento.
