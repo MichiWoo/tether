@@ -2,7 +2,7 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 03/09/2026 (cliente Tauri + Vue: perfil de usuario con avatar Gravatar y cambio de contraseña)
+> **Última actualización:** 03/09/2026 (landing page de Tether en Astro: apps/tether_web)
 
 ## Estado general
 
@@ -354,6 +354,34 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 ### Calidad / estado
 
 - Backend: `nest build` + `eslint` + `vitest` (40 tests) OK. App: `vue-tsc --noEmit` y `vite build` OK.
+
+## 2q. Landing page — apps/tether_web (completada)
+
+`apps/tether_web` — landing estática de Tether en **Astro 7** (salida `static` → `dist/`), CSS puro con tokens (sin framework CSS, sin JS excepto la constelación y el menú móvil). Preparada para un futuro despliegue con docker-compose (nginx sirviendo `dist/`).
+
+### Dirección (extiende el mundo one-bit de la app)
+
+- Tokens idénticos a la app, **dark-first Dracula**: fondo `#282a36` (`--paper`), tinta `#f8f8f2` (`--ink`), `--muted` `#6272a4`, `--gray-2` `#44475a`. Two-color estricto (sin acentos): dither, sombras duras (`3px 3px 0`), esquinas 0px, bordes 1px.
+- Tipografía vía `@fontsource`: **Silkscreen** (display), **JetBrains Mono** (datos), system-ui (body).
+- Firma visual: fondo de **constelación** (canvas con nodos + señal viajera, respeta `prefers-reduced-motion`), wordmark TETHER como SVG, logo reutilizado (`logo.png`).
+
+### Secciones (Español)
+
+1. **Hero** — navbar invertida con menú + CTA, headline "Copia aquí, pega allá.", constelación de fondo y **ventana Tether simulada** (clipboard llegando + archivo con barra de progreso): el producto haciendo su trabajo.
+2. **Funciones** — Portapapeles, Archivos, Tiempo real (con el posicionamiento "tus datos van directo a tu almacenamiento").
+3. **Cómo funciona** — 3 pasos (Copia → Viaja → Pega).
+4. **Descargas** — tarjetas macOS/Windows/Linux/iOS/Android con **"Próximamente"** (links de releases pendientes).
+5. **Teaser de planes** — Gratis / Pro / Equipos (sin precios).
+6. **Footer**.
+
+### Estructura
+
+`src/layouts/BaseLayout.astro` (nav + menú móvil + SEO), `src/components/` (Mark, Constellation, DemoWindow), `src/pages/index.astro` (secciones), `src/styles/global.css` (tokens y utilidades). Alias `@` → `src/` en `astro.config.mjs` y `tsconfig.json`.
+
+### Calidad / estado
+
+- `pnpm --filter @tether/web build` OK (1 página, estática); verificado sirviendo y con screenshots desktop (1440) y móvil (390).
+- Sin precios, números de clientes ni links de descarga reales (pendientes de releases); los CTA de descarga apuntan a `#descargas`.
 
 ## 3. Pendientes / próximos pasos
 

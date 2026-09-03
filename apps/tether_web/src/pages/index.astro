@@ -1,0 +1,500 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Mark from "@/components/Mark.astro";
+import Constellation from "@/components/Constellation.astro";
+import DemoWindow from "@/components/DemoWindow.astro";
+
+const PLATFORMS = [
+  { name: "macOS", tag: "Mac", note: "Apple Silicon + Intel" },
+  { name: "Windows", tag: "Win", note: "x64" },
+  { name: "Linux", tag: "Linux", note: "AppImage / .deb" },
+  { name: "iOS", tag: "iOS", note: "iPhone / iPad" },
+  { name: "Android", tag: "APK", note: "8.0+" },
+];
+
+const FEATURES = [
+  {
+    n: "01",
+    title: "Portapapeles",
+    body: "Copia texto en un equipo y pégalo en otro. Con historial, dedupe y auto-copiado en el destino.",
+  },
+  {
+    n: "02",
+    title: "Archivos",
+    body: "Arrastra, suelta y recibe. Los bytes van directo a tu almacenamiento (S3/MinIO), nunca por nuestro servidor.",
+  },
+  {
+    n: "03",
+    title: "Tiempo real",
+    body: "Estado online/offline de cada dispositivo y progreso en vivo de cada transferencia, por WebSocket.",
+  },
+];
+
+const STEPS = [
+  {
+    n: "1",
+    title: "Copia",
+    body: "En un dispositivo, copia texto o arrastra un archivo.",
+  },
+  {
+    n: "2",
+    title: "Viaja",
+    body: "El ítem aparece en el pasteboard del otro dispositivo, siempre tuyo.",
+  },
+  {
+    n: "3",
+    title: "Pega",
+    body: "Pégalo o guárdalo. Sin cables, sin correos a ti mismo.",
+  },
+];
+
+const PLANS = [
+  {
+    name: "Gratis",
+    desc: "Para empezar. Todo lo esencial, sin tarjeta.",
+  },
+  {
+    name: "Pro",
+    desc: "Más volumen, más dispositivos y transferencias prioritarias.",
+    flag: "Próximamente",
+  },
+  {
+    name: "Equipos",
+    desc: "Para compartir el hilo entre varias personas.",
+    flag: "Próximamente",
+  },
+];
+---
+
+<BaseLayout
+  title="Tether — Copia aquí, pega allá"
+  description="Tether conecta tus dispositivos: copia texto y mueve archivos entre tu Mac, PC, iPhone o Android, sin cables.">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <Constellation />
+    <div class="wrap hero__grid">
+      <div class="hero__copy">
+        <p class="hero__kicker"><Mark size={22} /> Conecta tus dispositivos</p>
+        <h1 class="hero__title">Copia aquí,<br />pega allá.</h1>
+        <p class="hero__lead">
+          Tether estira tu portapapeles y tu estante de archivos a través de todos tus
+          equipos. Un solo escritorio, en todas partes.
+        </p>
+        <p class="hero__sub">
+          Tus datos van directo a tu almacenamiento: el servidor nunca actúa de buffer.
+        </p>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="#descargas">Descargar Tether</a>
+          <a class="btn btn--ghost" href="#como-funciona">Cómo funciona</a>
+        </div>
+      </div>
+
+      <div class="hero__demo">
+        <DemoWindow />
+        <p class="hero__demo-caption">Clipboard y archivos en vuelo. Izquierda a derecha, sin cables.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES ============ -->
+  <section class="section" id="funciones">
+    <div class="wrap">
+      <header class="section__head">
+        <span class="section__kicker">Funciones</span>
+        <h2 class="section__title">Un solo escritorio,<br />en todas partes.</h2>
+      </header>
+
+      <div class="features">
+        {
+          FEATURES.map((f) => (
+            <article class="card">
+              <span class="card__num">{f.n}</span>
+              <h3 class="card__title">{f.title}</h3>
+              <p class="card__body">{f.body}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CÓMO FUNCIONA ============ -->
+  <section class="section section--invert" id="como-funciona">
+    <div class="wrap">
+      <header class="section__head">
+        <span class="section__kicker">Cómo funciona</span>
+        <h2 class="section__title">Tres pasos.<br />Cero fricción.</h2>
+      </header>
+
+      <ol class="steps">
+        {
+          STEPS.map((s) => (
+            <li class="step">
+              <span class="step__num">{s.n}</span>
+              <h3 class="step__title">{s.title}</h3>
+              <p class="step__body">{s.body}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ DESCARGAS ============ -->
+  <section class="section" id="descargas">
+    <div class="wrap">
+      <header class="section__head">
+        <span class="section__kicker">Descargas</span>
+        <h2 class="section__title">Para todos<br />tus equipos.</h2>
+        <p class="section__lead">Los enlaces de descarga estarán disponibles con las próximas releases.</p>
+      </header>
+
+      <div class="downloads">
+        {
+          PLATFORMS.map((p) => (
+            <a class="download" href="#" aria-disabled="true">
+              <span class="download__tag">{p.tag}</span>
+              <span class="download__info">
+                <span class="download__name">{p.name}</span>
+                <span class="download__note">{p.note}</span>
+              </span>
+              <span class="download__cta">Próximamente</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLANES ============ -->
+  <section class="section section--invert" id="planes">
+    <div class="wrap">
+      <header class="section__head">
+        <span class="section__kicker">Próximamente</span>
+        <h2 class="section__title">Planes a tu medida.</h2>
+        <p class="section__lead">Estamos preparando suscripciones para quienes necesitan más volumen y prioridad.</p>
+      </header>
+
+      <div class="plans">
+        {
+          PLANS.map((p) => (
+            <article class={'plan' + (p.flag ? ' plan--muted' : '')}>
+              <div class="plan__head">
+                <h3 class="plan__name">{p.name}</h3>
+                {p.flag && <span class="plan__flag">{p.flag}</span>}
+              </div>
+              <p class="plan__desc">{p.desc}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <span class="footer__brand"><Mark size={20} /> Tether</span>
+      <span class="footer__copy">© {new Date().getFullYear()} Tether. Conecta tus dispositivos.</span>
+    </div>
+  </footer>
+</BaseLayout>
+
+<style>
+  /* Hero */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--ink);
+  }
+  .hero__grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: var(--space-4);
+    align-items: center;
+    padding-block: var(--space-5);
+    position: relative;
+  }
+  .hero__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: var(--space-3);
+  }
+  .hero__title {
+    font-size: clamp(42px, 7vw, 76px);
+    letter-spacing: 0.02em;
+  }
+  .hero__lead {
+    margin-top: var(--space-3);
+    font-size: 18px;
+    max-width: 34ch;
+  }
+  .hero__sub {
+    margin-top: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+    max-width: 44ch;
+  }
+  .hero__actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+
+  .hero__demo {
+    position: relative;
+  }
+  .hero__demo-caption {
+    margin-top: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+    max-width: 46ch;
+  }
+
+  /* Secciones */
+  .section {
+    padding-block: var(--space-5);
+    border-bottom: 1px solid var(--ink);
+  }
+  .section--invert {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .section--invert .section__kicker,
+  .section--invert .section__lead {
+    color: var(--gray-2);
+  }
+  .section--invert .section__title {
+    color: var(--paper);
+  }
+
+  .section__head {
+    max-width: 720px;
+    margin-bottom: var(--space-4);
+  }
+  .section__kicker {
+    font-family: var(--font-display);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .section__title {
+    margin-top: var(--space-1);
+    font-size: clamp(28px, 4vw, 44px);
+  }
+  .section__lead {
+    margin-top: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* Features */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+  .card {
+    border: 1px solid var(--ink);
+    padding: var(--space-3) var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .card:hover {
+    box-shadow: var(--shadow);
+    transform: translate(-2px, -2px);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .card__num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .card__title {
+    font-size: 18px;
+  }
+  .card__body {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* Pasos */
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+    counter-reset: step;
+  }
+  .step {
+    border: 1px solid var(--paper);
+    padding: var(--space-3) var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .step__num {
+    font-family: var(--font-display);
+    font-size: 34px;
+    line-height: 1;
+  }
+  .step__title {
+    font-size: 16px;
+    color: var(--paper);
+  }
+  .step__body {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--gray-2);
+  }
+
+  /* Descargas */
+  .downloads {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: var(--space-2);
+  }
+  .download {
+    border: 1px solid var(--ink);
+    padding: var(--space-2);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .download:hover {
+    box-shadow: var(--shadow);
+    transform: translate(-2px, -2px);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .download__tag {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--ink);
+    font-family: var(--font-display);
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+  .download__info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .download__name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .download__note {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .download__cta {
+    margin-left: auto;
+    font-family: var(--font-display);
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* Planes */
+  .plans {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+  }
+  .plan {
+    border: 1px solid var(--paper);
+    padding: var(--space-3) var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .plan--muted {
+    opacity: 0.85;
+  }
+  .plan--muted .plan__desc {
+    color: var(--gray-2);
+  }
+  .plan__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .plan__name {
+    font-size: 18px;
+    color: var(--paper);
+  }
+  .plan__flag {
+    font-family: var(--font-display);
+    font-size: 10px;
+    text-transform: uppercase;
+    border: 1px solid var(--paper);
+    padding: 2px 8px;
+  }
+  .plan__desc {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--gray-2);
+  }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--ink);
+    padding-block: var(--space-3);
+  }
+  .footer__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+  .footer__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .footer__copy {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 900px) {
+    .hero__grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-3);
+    }
+    .features,
+    .steps,
+    .plans {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

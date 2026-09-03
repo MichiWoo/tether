@@ -1,0 +1,85 @@
+<script>
+  // Fondo de constelación one-bit: nodos y líneas en tinta pura, con una señal
+  // (cuadrado hueco) que viaja por las aristas — el "hilo" que conecta tus equipos.
+  const canvas = document.querySelector('canvas#constellation');
+  if (!canvas) throw new Error('missing canvas');
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const NODES = [
+    [0.04, 0.18], [0.16, 0.08], [0.32, 0.2], [0.5, 0.1], [0.68, 0.22], [0.86, 0.1],
+    [0.96, 0.32], [0.08, 0.5], [0.26, 0.42], [0.47, 0.56], [0.66, 0.45], [0.84, 0.55],
+    [0.15, 0.78], [0.37, 0.8], [0.6, 0.84], [0.88, 0.88], [0.05, 0.95],
+  ];
+
+  const EDGES = [
+    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [7, 8], [8, 9], [9, 10], [10, 11],
+    [12, 13], [13, 14], [14, 15], [0, 7], [2, 8], [3, 9], [4, 10], [5, 11], [8, 12],
+    [9, 13], [10, 14], [11, 15], [12, 16],
+  ];
+
+  const ctx = canvas.getContext('2d');
+  let raf = 0;
+  const start = performance.now();
+
+  function draw(now) {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const t = reducedMotion ? 0.6 : (now - start) / 3200;
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+
+    const pts = NODES.map(([x, y]) => ({ x: x * w, y: y * h }));
+
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.16;
+    ctx.lineWidth = 1;
+    for (const [a, b] of EDGES) {
+      ctx.beginPath();
+      ctx.moveTo(pts[a].x, pts[a].y);
+      ctx.lineTo(pts[b].x, pts[b].y);
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = 0.45;
+    for (const p of pts) {
+      ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+    }
+
+    const segCount = EDGES.length;
+    const pos = t * segCount;
+    const seg = Math.floor(pos) % segCount;
+    const local = pos - Math.floor(pos);
+    const a = pts[EDGES[seg][0]];
+    const b = pts[EDGES[seg][1]];
+    const sx = a.x + (b.x - a.x) * local;
+    const sy = a.y + (b.y - a.y) * local;
+    ctx.globalAlpha = 1;
+    ctx.strokeRect(sx - 4, sy - 4, 8, 8);
+    ctx.globalAlpha = 1;
+
+    if (!reducedMotion) raf = requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+</script>
+
+<canvas id="constellation" aria-hidden="true"></canvas>
+
+<style>
+  canvas#constellation {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+</style>

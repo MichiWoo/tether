@@ -20,6 +20,7 @@ Portapapeles y transferencia de archivos entre tus dispositivos (Windows, Linux,
 | Backend | **NestJS 11** (Node + TypeScript, ESM) |
 | Cliente desktop | **Tauri 2 + Vue 3** (TypeScript, Tailwind) |
 | Cliente móvil | **Flutter** (referencia funcional) |
+| Web / landing | **Astro 7** (estático, HTML/CSS sin framework) |
 | Base de datos | **PostgreSQL 16** con **Prisma 7** |
 | Realtime | **Socket.IO** |
 | Queues/Jobs | **BullMQ + Redis** |
@@ -67,6 +68,7 @@ Tether/
 │   │       ├── features/     # auth, shell, dashboard, devices, clipboard, files
 │   │       ├── stores/       # Pinia (auth, files, shares, stats, ...)
 │   │       └── core/         # http, realtime, theme, types
+│   ├── tether_web/           # Landing (Astro, estático) — apps/tether_web/src
 │   └── tether_app/           # Cliente Flutter (referencia funcional)
 ├── shared/
 │   ├── protocol/             # DTOs y eventos WS compartidos (futuro)
@@ -330,6 +332,11 @@ pnpm --filter @tether/app-tauri dev          # Tauri + Vue (ventana nativa)
 pnpm --filter @tether/app-tauri dev:web      # solo UI en el navegador
 pnpm --filter @tether/app-tauri build        # tauri build (bundle nativo)
 pnpm --filter @tether/app-tauri typecheck    # vue-tsc --noEmit
+
+# Landing (Astro)
+pnpm --filter @tether/web dev                # dev server (HMR)
+pnpm --filter @tether/web build              # build estático → dist/
+pnpm --filter @tether/web preview            # preview del build
 
 # Base de datos (Prisma)
 pnpm --filter @tether/backend prisma:generate

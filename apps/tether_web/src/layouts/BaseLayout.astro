@@ -1,0 +1,161 @@
+---
+import "@fontsource/silkscreen/400.css";
+import "@fontsource/silkscreen/700.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/500.css";
+import "@fontsource/jetbrains-mono/700.css";
+import Mark from "@/components/Mark.astro";
+import "@/styles/global.css";
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+
+const NAV = [
+  { href: "#funciones", label: "Funciones" },
+  { href: "#como-funciona", label: "Cómo funciona" },
+  { href: "#descargas", label: "Descargas" },
+  { href: "#planes", label: "Planes" },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="/logo.png" />
+    <meta name="theme-color" content="#282a36" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap topbar__inner">
+        <a href="/" class="brand">
+          <Mark size={26} />
+          <span class="brand__name">Tether</span>
+        </a>
+
+        <nav class="topnav" aria-label="Principal">
+          {NAV.map((item) => <a class="nav-link" href={item.href}>{item.label}</a>)}
+        </nav>
+
+        <a class="btn btn--primary topbar__cta" href="#descargas">Descargar</a>
+
+        <button class="burger" aria-label="Abrir menú" aria-expanded="false" id="burger">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="mobile-menu" id="mobileMenu" hidden>
+      <nav aria-label="Móvil">
+        {NAV.map((item) => <a class="nav-link" href={item.href}>{item.label}</a>)}
+        <a class="btn btn--primary btn--block" href="#descargas">Descargar</a>
+      </nav>
+    </div>
+
+    <slot />
+  </body>
+</html>
+
+<script>
+  const burger = document.getElementById('burger');
+  const menu = document.getElementById('mobileMenu');
+  burger.addEventListener('click', () => {
+    const open = menu.hasAttribute('hidden');
+    menu.toggleAttribute('hidden', !open);
+    burger.setAttribute('aria-expanded', String(open));
+  });
+  menu.querySelectorAll('a').forEach((a) =>
+    a.addEventListener('click', () => menu.setAttribute('hidden', '')),
+  );
+</script>
+
+<style>
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--paper);
+    border-bottom: 1px solid var(--ink);
+  }
+  .topbar__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 60px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+  }
+  .brand__name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .topnav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: var(--space-3);
+  }
+  .topbar__cta {
+    margin-left: auto;
+  }
+  .burger {
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    margin-left: auto;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid var(--ink);
+  }
+  .burger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--ink);
+  }
+  .mobile-menu {
+    position: fixed;
+    inset: 60px 0 auto 0;
+    z-index: 49;
+    background: var(--paper);
+    border-bottom: 2px solid var(--ink);
+    padding: var(--space-2);
+    box-shadow: var(--shadow);
+  }
+  .mobile-menu nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mobile-menu .nav-link {
+    display: block;
+  }
+
+  @media (max-width: 760px) {
+    .topnav,
+    .topbar__cta {
+      display: none;
+    }
+    .burger {
+      display: flex;
+    }
+  }
+</style>

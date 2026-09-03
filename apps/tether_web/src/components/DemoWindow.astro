@@ -1,0 +1,224 @@
+---
+// Ventana simulada de Tether: el producto haciendo su trabajo en el hero.
+// Muestra un ítem de clipboard llegando y un archivo en envío con progreso.
+---
+
+<div class="win">
+  <div class="win__title">
+    <span class="win__title-mark">
+      <span class="sq filled"></span>
+      <span class="ln"></span>
+      <span class="sq hollow"></span>
+    </span>
+    <span class="win__name">Tether</span>
+    <span class="win__status">en línea</span>
+  </div>
+
+  <div class="win__body">
+    <dl class="row">
+      <dt class="row__label">Dispositivos</dt>
+      <dd class="row__value">3 en línea</dd>
+    </dl>
+
+    <div class="paper">
+      <div class="paper__head">
+        <span class="paper__title">Portapapeles</span>
+        <span class="paper__meta">de MacBook Pro</span>
+      </div>
+      <div class="paper__item">
+        <span class="dot dot--filled"></span>
+        <code>https://tether.app/download</code>
+      </div>
+    </div>
+
+    <div class="transfer">
+      <span class="transfer__icon">
+        <span class="doc"></span>
+      </span>
+      <div class="transfer__body">
+        <div class="transfer__meta">
+          <span>foto.png · 2.4 MB</span>
+          <span>78%</span>
+        </div>
+        <div class="transfer__track">
+          <div class="transfer__fill" style="width: 78%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .win {
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    box-shadow: 4px 4px 0 var(--ink);
+    max-width: 460px;
+    font-family: var(--font-mono);
+  }
+  .win__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-display);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .win__title-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .win__title-mark .sq {
+    width: 10px;
+    height: 10px;
+  }
+  .win__title-mark .filled {
+    background: var(--paper);
+  }
+  .win__title-mark .ln {
+    width: 6px;
+    height: 1px;
+    background: var(--paper);
+  }
+  .win__title-mark .hollow {
+    border: 1px solid var(--paper);
+  }
+  .win__status {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: lowercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .win__status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: var(--paper);
+  }
+
+  .win__body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--ink);
+  }
+  .row__label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .row__value {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .paper {
+    border: 1px solid var(--ink);
+  }
+  .paper__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--ink);
+    background: var(--gray-2);
+  }
+  .paper__title {
+    font-family: var(--font-display);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .paper__meta {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .paper__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    font-size: 13px;
+  }
+  .paper__item code {
+    font-family: var(--font-mono);
+    color: var(--ink);
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+  }
+  .dot--filled {
+    background: var(--ink);
+  }
+
+  .transfer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--ink);
+    padding: 12px;
+  }
+  .transfer__icon {
+    width: 34px;
+    height: 40px;
+    flex-shrink: 0;
+    border: 1px solid var(--ink);
+    display: grid;
+    place-items: center;
+  }
+  .doc {
+    width: 14px;
+    height: 18px;
+    border: 1px solid var(--ink);
+    position: relative;
+  }
+  .doc::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    background-image: repeating-linear-gradient(
+      var(--ink) 0 1px,
+      transparent 1px 3px
+    );
+  }
+  .transfer__body {
+    flex: 1;
+    min-width: 0;
+  }
+  .transfer__meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .transfer__track {
+    height: 10px;
+    border: 1px solid var(--ink);
+    padding: 1px;
+  }
+  .transfer__fill {
+    height: 100%;
+    background: var(--ink);
+  }
+</style>
