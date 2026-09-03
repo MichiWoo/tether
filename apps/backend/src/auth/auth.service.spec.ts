@@ -14,7 +14,7 @@ import * as bcrypt from 'bcrypt';
 
 function createMocks() {
   const prisma = {
-    user: { findUnique: vi.fn(), create: vi.fn() },
+    user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
     refreshToken: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -54,6 +54,7 @@ const user = {
   email: 'a@tether.dev',
   password: 'hash',
   name: 'A',
+  avatarUrl: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -107,7 +108,14 @@ describe('AuthService', () => {
       expect(result).toEqual({
         accessToken: 'access',
         refreshToken: 'refresh',
-        user: { id: 'u1', email: 'a@tether.dev', name: 'A' },
+        user: {
+          id: 'u1',
+          email: 'a@tether.dev',
+          name: 'A',
+          avatarUrl: null,
+          gravatarUrl:
+            'https://www.gravatar.com/avatar/854ebc996d45ee5ca7cfb7f21807bf0d?d=retro&s=256',
+        },
       });
     });
   });
@@ -160,6 +168,70 @@ describe('AuthService', () => {
         data: { revokedAt: expect.any(Date) },
       });
       expect(result).toEqual({ accessToken: 'access', refreshToken: 'refresh' });
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('actualiza nombre y avatarUrl y devuelve el perfil público', async () => {
+      prisma.user.update.mockResolvedValue({
+        ...user,
+        name: 'Nuevo',
+        avatarUrl: 'https://example.com/avatar.png',
+      });
+
+      const result = await service.updateProfile('u1', {
+        name: 'Nuevo',
+        avatarUrl: 'https://example.com/avatar.png',
+      });
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: { name: 'Nuevo', avatarUrl: 'https://example.com/avatar.png' },
+      });
+      expect(result).toMatchObject({
+        id: 'u1',
+        name: 'Nuevo',
+        avatarUrl: 'https://example.com/avatar.png',
+      });
+    });
+
+    it('limpia avatarUrl a null si se envía vacío', async () => {
+      prisma.user.update.mockResolvedValue({ ...user, avatarUrl: null });
+
+      await service.updateProfile('u1', { avatarUrl: '   ' });
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: { avatarUrl: null },
+      });
+    });
+  });
+
+  describe('updatePassword', () => {
+    it('lanza 401 si la contraseña actual no coincide', async () => {
+      prisma.user.findUnique.mockResolvedValue(user);
+      vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
+
+      await expect(
+        service.updatePassword('u1', {
+          currentPassword: 'incorrecta',
+          newPassword: 'nuevaclave2',
+        }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('hashea y actualiza la contraseña si la actual es correcta', async () => {
+      prisma.user.findUnique.mockResolvedValue(user);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+      prisma.user.update.mockResolvedValue({ ...user });
+
+      const result = await service.updatePassword('u1', {
+        currentPassword: 'supersecret1',
+        newPassword: 'nuevaclave2',
+      });
+
+      expect(bcrypt.hash).toHaveBeenCalledWith('nuevaclave2', 12);
+      expect(result).toEqual({ success: true });
     });
   });
 });

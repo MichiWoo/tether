@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { applyTheme, initialTheme, type ThemeMode } from "@/core/theme";
 
-export type Section = "home" | "devices" | "clipboard" | "files";
+export type Section = "home" | "devices" | "clipboard" | "files" | "profile";
 
 export const useUiStore = defineStore("ui", {
   state: () => ({

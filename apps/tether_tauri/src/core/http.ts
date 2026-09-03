@@ -8,6 +8,8 @@ export const ENDPOINTS = {
   authRefresh: "/auth/refresh",
   authLogout: "/auth/logout",
   authMe: "/auth/me",
+  authProfile: "/auth/profile",
+  authPassword: "/auth/password",
   devices: "/devices",
   clipboard: "/clipboard",
   clipboardLatest: "/clipboard/latest",

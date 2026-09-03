@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
+import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { UpdatePasswordDto } from './dto/update-password.dto.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import { AuthResponse, AuthTokens, JwtUser } from './auth.types.js';
@@ -63,5 +65,31 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'No autenticado' })
   me(@CurrentUser() user: JwtUser): Promise<JwtUser> {
     return this.authService.getMe(user.id);
+  }
+
+  @Patch('profile')
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Actualizar perfil',
+    description: 'Actualiza nombre y avatarUrl (vacío = usar Gravatar)',
+  })
+  @ApiResponse({ status: 200, description: 'Perfil actualizado', type: JwtUser })
+  @ApiResponse({ status: 401, description: 'No autenticado' })
+  updateProfile(@CurrentUser() user: JwtUser, @Body() dto: UpdateProfileDto): Promise<JwtUser> {
+    return this.authService.updateProfile(user.id, dto);
+  }
+
+  @Patch('password')
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Cambiar contraseña', description: 'Requiere la contraseña actual' })
+  @ApiResponse({ status: 200, description: 'Contraseña actualizada' })
+  @ApiResponse({ status: 401, description: 'Contraseña actual incorrecta' })
+  updatePassword(
+    @CurrentUser() user: JwtUser,
+    @Body() dto: UpdatePasswordDto,
+  ): Promise<{ success: true }> {
+    return this.authService.updatePassword(user.id, dto);
   }
 }

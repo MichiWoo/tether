@@ -2,7 +2,7 @@
 
 Este documento registra el estado actual del proyecto y lo que queda pendiente. Se actualiza al cierre de cada sesión.
 
-> **Última actualización:** 03/09/2026 (cliente Tauri + Vue: tema Dracula en modo oscuro y dashboard de inicio con `GET /stats`)
+> **Última actualización:** 03/09/2026 (cliente Tauri + Vue: perfil de usuario con avatar Gravatar y cambio de contraseña)
 
 ## Estado general
 
@@ -332,6 +332,28 @@ Monorepo pnpm con **NestJS 11** (TypeScript estricto, ESM) en `apps/backend`.
 
 - Backend: `nest build` + `eslint` OK. App: `vue-tsc --noEmit` y `vite build` OK.
 - Prerrequisito de la app: Rust + dependencias de Tauri; `pnpm --filter @tether/app-tauri dev` (o `dev:web` para solo la UI en navegador).
+
+## 2p. Cliente Tauri + Vue — perfil de usuario (completada)
+
+`apps/tether_tauri` + `apps/backend` — pantalla de perfil accesible desde el dropdown de cuenta.
+
+### Backend — auth
+
+- **Schema**: `User.avatarUrl String?` + migración `add_user_avatar_url`.
+- **`JwtUser`** ahora incluye `avatarUrl` (override custom, nullable) y `gravatarUrl` (calculado al vuelo con MD5 del email; `?d=retro&s=256` para el fallback pixel).
+- **`PATCH /auth/profile`** (`UpdateProfileDto`): actualiza `name` y `avatarUrl` (cadena vacía → `null` = usar Gravatar). **`PATCH /auth/password`** (`UpdatePasswordDto`): verifica `currentPassword` con bcrypt y hashea `newPassword`.
+- Tests: `auth.service.spec.ts` actualizado y ampliado (updateProfile/updatePassword) → **40 tests**.
+
+### App — perfil
+
+- **`ProfileScreen.vue`** (`features/profile/`): sección "Perfil" (avatar con fallback a inicial, nombre, email solo lectura, URL de avatar) y "Contraseña" (actual/nueva/confirmar con validación). Feedback vía toasts.
+- **`stores/auth.ts`**: `updateProfile()` (PATCH y actualiza `this.user`) y `changePassword()`.
+- **`HomeShell.vue`**: avatar en la barra superior y en el dropdown; botón **"Perfil"** en el dropdown abre la sección (`ui.section === 'profile'`).
+- `core/types.ts`: `User` gana `avatarUrl`/`gravatarUrl` + helper `avatarFor()`; `core/http.ts` con endpoints `authProfile`/`authPassword`.
+
+### Calidad / estado
+
+- Backend: `nest build` + `eslint` + `vitest` (40 tests) OK. App: `vue-tsc --noEmit` y `vite build` OK.
 
 ## 3. Pendientes / próximos pasos
 

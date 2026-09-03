@@ -9,16 +9,18 @@ import {
   Moon,
   MonitorSmartphone,
   Sun,
+  User,
 } from "@lucide/vue";
 import DashboardScreen from "@/features/dashboard/DashboardScreen.vue";
 import DevicesScreen from "@/features/devices/DevicesScreen.vue";
 import ClipboardScreen from "@/features/clipboard/ClipboardScreen.vue";
 import FilesScreen from "@/features/files/FilesScreen.vue";
+import ProfileScreen from "@/features/profile/ProfileScreen.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useFilesStore } from "@/stores/files";
 import { useUiStore, type Section } from "@/stores/ui";
 import { realtime } from "@/core/realtime";
-import { userDisplayName } from "@/core/types";
+import { avatarFor, userDisplayName } from "@/core/types";
 
 const auth = useAuthStore();
 const ui = useUiStore();
@@ -27,6 +29,17 @@ const filesStore = useFilesStore();
 const rtStatus = computed(() => realtime.status.value);
 const menuOpen = ref(false);
 const dragging = ref(false);
+const avatarErr = ref(false);
+
+const avatarUrl = computed(() => (auth.user ? avatarFor(auth.user) : ""));
+const avatarInitial = computed(() =>
+  auth.user ? userDisplayName(auth.user).charAt(0).toUpperCase() : "",
+);
+
+function openProfile() {
+  menuOpen.value = false;
+  ui.setSection("profile");
+}
 
 let unlistenDrop: UnlistenFn | null = null;
 let unlistenEnter: UnlistenFn | null = null;
@@ -58,7 +71,10 @@ const sections: Array<{ key: Section; label: string; icon: typeof ClipboardPaste
   { key: "files", label: "Archivos", icon: FolderOpen },
 ];
 
-const sectionTitle = computed(() => sections.find((s) => s.key === ui.section)?.label ?? "");
+const sectionTitle = computed(() => {
+  if (ui.section === "profile") return "Perfil";
+  return sections.find((s) => s.key === ui.section)?.label ?? "";
+});
 
 const realtimeLabel = computed(() => {
   switch (rtStatus.value) {
@@ -118,16 +134,45 @@ const realtimeLabel = computed(() => {
 
       <div class="relative">
         <button class="flex items-center gap-1.5 px-2 py-1 font-display text-xs uppercase hover:bg-bg/20" @click="menuOpen = !menuOpen">
+          <span class="flex h-5 w-5 items-center justify-center overflow-hidden border border-bg">
+            <img
+              v-if="avatarUrl && !avatarErr"
+              :src="avatarUrl"
+              alt=""
+              class="h-full w-full object-cover"
+              @error="avatarErr = true"
+            />
+            <span v-else class="text-[10px] leading-none">{{ avatarInitial }}</span>
+          </span>
           {{ userDisplayName(auth.user!) }}
         </button>
         <div
           v-if="menuOpen"
           class="absolute right-0 top-full z-40 mt-1 w-60 border-2 border-fg bg-bg text-fg shadow-1bit"
         >
-          <div class="border-b border-fg px-4 py-2.5">
-            <p class="truncate font-display text-xs uppercase">{{ userDisplayName(auth.user!) }}</p>
-            <p class="truncate font-mono text-xs text-muted">{{ auth.user?.email }}</p>
+          <div class="flex items-center gap-3 border-b border-fg px-4 py-2.5">
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden border border-fg">
+              <img
+                v-if="avatarUrl && !avatarErr"
+                :src="avatarUrl"
+                alt=""
+                class="h-full w-full object-cover"
+                @error="avatarErr = true"
+              />
+              <span v-else class="font-display text-sm">{{ avatarInitial }}</span>
+            </div>
+            <div class="min-w-0">
+              <p class="truncate font-display text-xs uppercase">{{ userDisplayName(auth.user!) }}</p>
+              <p class="truncate font-mono text-xs text-muted">{{ auth.user?.email }}</p>
+            </div>
           </div>
+          <button
+            class="flex w-full items-center gap-2 px-4 py-2.5 font-display text-xs uppercase hover:bg-surface-2"
+            @click="openProfile"
+          >
+            <User :size="15" />
+            Perfil
+          </button>
           <button
             class="flex w-full items-center gap-2 px-4 py-2.5 font-display text-xs uppercase hover:bg-surface-2"
             @click="auth.logout()"
@@ -155,6 +200,7 @@ const realtimeLabel = computed(() => {
           <DashboardScreen v-if="ui.section === 'home'" />
           <DevicesScreen v-else-if="ui.section === 'devices'" />
           <ClipboardScreen v-else-if="ui.section === 'clipboard'" />
+          <ProfileScreen v-else-if="ui.section === 'profile'" />
           <FilesScreen v-else />
         </div>
       </div>

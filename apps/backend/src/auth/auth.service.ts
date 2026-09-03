@@ -7,6 +7,8 @@ import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
+import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { UpdatePasswordDto } from './dto/update-password.dto.js';
 import type { AuthResponse, AuthTokens, JwtPayload, JwtUser } from './auth.types.js';
 
 const BCRYPT_ROUNDS = 12;
@@ -125,6 +127,42 @@ export class AuthService {
     return this.toPublicUser(user);
   }
 
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<JwtUser> {
+    const data: { name?: string | null; avatarUrl?: string | null } = {};
+    if (dto.name !== undefined) {
+      data.name = dto.name.trim().length > 0 ? dto.name.trim() : null;
+    }
+    if (dto.avatarUrl !== undefined) {
+      const trimmed = dto.avatarUrl.trim();
+      data.avatarUrl = trimmed.length > 0 ? trimmed : null;
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data,
+    });
+    return this.toPublicUser(user);
+  }
+
+  async updatePassword(userId: string, dto: UpdatePasswordDto): Promise<{ success: true }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const valid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!valid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: passwordHash },
+    });
+    return { success: true };
+  }
+
   private async issueTokens(
     userId: string,
     email: string,
@@ -185,7 +223,23 @@ export class AuthService {
     return Math.floor(this.parseDuration(value) / 1000);
   }
 
-  private toPublicUser(user: { id: string; email: string; name: string | null }): JwtUser {
-    return { id: user.id, email: user.email, name: user.name ?? undefined };
+  private toPublicUser(user: {
+    id: string;
+    email: string;
+    name: string | null;
+    avatarUrl: string | null;
+  }): JwtUser {
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name ?? undefined,
+      avatarUrl: user.avatarUrl,
+      gravatarUrl: this.gravatarUrl(user.email),
+    };
+  }
+
+  private gravatarUrl(email: string): string {
+    const hash = createHash('md5').update(email.trim().toLowerCase()).digest('hex');
+    return `https://www.gravatar.com/avatar/${hash}?d=retro&s=256`;
   }
 }

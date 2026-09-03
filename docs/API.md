@@ -131,6 +131,8 @@ Todos los endpoints bajo `auth` son públicos salvo `GET /auth/me`. El resto req
 | POST | `/auth/refresh` | Rotar refresh token |
 | POST | `/auth/logout` | Revocar refresh token |
 | GET | `/auth/me` | Perfil del usuario autenticado |
+| PATCH | `/auth/profile` | Actualizar perfil (`name`, `avatarUrl`; vacío = usar Gravatar) |
+| PATCH | `/auth/password` | Cambiar contraseña (`currentPassword`, `newPassword`) |
 
 ### devices
 | Método | Ruta | Descripción |

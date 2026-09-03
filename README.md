@@ -190,6 +190,8 @@ Todos los endpoints requieren `Authorization: Bearer <accessToken>`, excepto `au
 | POST | `/auth/refresh` | Rotar refresh token (el anterior queda revocado) |
 | POST | `/auth/logout` | Revocar refresh token |
 | GET | `/auth/me` | Perfil del usuario autenticado |
+| PATCH | `/auth/profile` | Actualizar perfil (`name`, `avatarUrl`; vacío = usar Gravatar) |
+| PATCH | `/auth/password` | Cambiar contraseña (`currentPassword`, `newPassword`) |
 
 ### Devices
 | Método | Ruta | Descripción |

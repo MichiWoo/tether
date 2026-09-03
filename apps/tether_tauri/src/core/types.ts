@@ -9,6 +9,8 @@ export interface User {
   id: string;
   email: string;
   name?: string | null;
+  avatarUrl?: string | null;
+  gravatarUrl?: string | null;
 }
 
 export interface AuthResult {
@@ -20,6 +22,10 @@ export interface AuthResult {
 export function userDisplayName(user: User): string {
   const n = user.name;
   return n && n.length > 0 ? n : user.email.split("@")[0];
+}
+
+export function avatarFor(user: User): string {
+  return user.avatarUrl || user.gravatarUrl || "";
 }
 
 export type DevicePlatformWire = "IOS" | "ANDROID" | "WINDOWS" | "LINUX" | "MACOS" | "WEB";

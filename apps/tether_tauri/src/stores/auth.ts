@@ -112,6 +112,16 @@ export const useAuthStore = defineStore("auth", {
       this.status = "unauthenticated";
     },
 
+    async updateProfile(patch: { name?: string; avatarUrl?: string }) {
+      const res = await http.patch<User>(ENDPOINTS.authProfile, patch);
+      this.user = res.data;
+      return res.data;
+    },
+
+    async changePassword(currentPassword: string, newPassword: string) {
+      await http.patch(ENDPOINTS.authPassword, { currentPassword, newPassword });
+    },
+
     clearError() {
       this.error = null;
     },
