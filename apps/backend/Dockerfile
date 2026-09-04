@@ -19,6 +19,8 @@ RUN pnpm install --frozen-lockfile
 # Stage build: compilar shared packages, generar Prisma client y build NestJS
 # =============================================================================
 FROM base AS build
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
 COPY apps/backend apps/backend
 COPY shared/protocol shared/protocol
 COPY shared/types shared/types

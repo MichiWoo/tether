@@ -54,6 +54,8 @@ services:
       context: .
       dockerfile: apps/backend/Dockerfile
       target: build
+      args:
+        DATABASE_URL: ${DATABASE_URL}
     container_name: tether-migrate
     restart: 'no'
     env_file: .env
@@ -74,6 +76,8 @@ services:
       context: .
       dockerfile: apps/backend/Dockerfile
       target: runtime
+      args:
+        DATABASE_URL: ${DATABASE_URL}
     container_name: tether-backend
     restart: unless-stopped
     env_file: .env
