@@ -215,6 +215,8 @@ Archivo de referencia (desarrollo): `apps/backend/.env.example`; para despliegue
 | `MINIO_ACCESS_KEY` | **Sí** | — | Access key S3 |
 | `MINIO_SECRET_KEY` | **Sí** | — | Secret key S3 |
 | `MINIO_BUCKET` | **Sí** | — | Bucket de objetos |
+| `MINIO_RELEASES_BUCKET` | No | `releases` | Bucket de artefactos de releases (Tauri) |
+| `RELEASES_API_KEY` | No | *(vacío)* | API key para `POST /releases` (usada por CI) |
 | `JWT_SECRET` | **Sí** (≥32 chars) | — | Firma de access tokens |
 | `JWT_EXPIRES_IN` | No | `15m` | Duración del access token |
 | `REFRESH_TOKEN_SECRET` | **Sí** (≥32 chars) | — | Firma de refresh tokens |
@@ -289,6 +291,15 @@ Todos los endpoints requieren `Authorization: Bearer <accessToken>`, excepto `au
 |---|---|---|
 | GET | `/health` | Health check con dependencias (`database`, `redis`, `storage`) |
 | GET | `/` | Nombre y estado del servicio |
+
+### Releases (distribución desktop)
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/releases/latest?channel=&platform=&arch=` | Última versión publicada + URL presignada de descarga |
+| GET | `/releases` | Lista de releases publicados |
+| GET | `/releases/latest.json` | Manifest de auto-actualización (`tauri-plugin-updater`) |
+| GET | `/releases/:id/download` | 302 → URL presignada fresca |
+| POST | `/releases` | Registra un artefacto (protegido con `x-api-key`) |
 
 ### WebSocket
 
@@ -407,6 +418,7 @@ pnpm db:down
 
 - [`docs/API.md`](docs/API.md) — documentación completa de la API, ambientes (dev/QA/prod), endpoints y eventos WebSocket.
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — visión, arquitectura y fases del producto.
+- [`docs/RELEASES.md`](docs/RELEASES.md) — cómo versionar, compilar, firmar y distribuir los bins de la app desktop (Tauri) vía MinIO + auto-update.
 
 ## Fases del roadmap
 

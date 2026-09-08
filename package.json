@@ -9,6 +9,7 @@
     "dev:backend": "pnpm --filter @tether/backend start:dev",
     "dev:app": "flutter run -d macos --dart-define=API_BASE_URL=http://localhost:3100",
     "lint": "pnpm -r lint",
+    "release": "node scripts/bump-version.mjs",
     "db:up": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d postgres redis minio",
     "db:down": "docker compose -f docker-compose.yml -f docker-compose.dev.yml down"
   },

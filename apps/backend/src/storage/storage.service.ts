@@ -20,12 +20,14 @@ export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
   private readonly s3: S3Client;
   private readonly bucket: string;
+  private readonly releasesBucket: string;
 
   constructor(configService: ConfigService) {
     const endpoint = configService.get<string>('MINIO_ENDPOINT', 'localhost');
     const port = configService.get<string>('MINIO_PORT', '9002');
     const useSsl = configService.get<boolean>('MINIO_USE_SSL', false) === true;
     this.bucket = configService.get<string>('MINIO_BUCKET', 'tether');
+    this.releasesBucket = configService.get<string>('MINIO_RELEASES_BUCKET', 'releases');
 
     this.s3 = new S3Client({
       endpoint: `${useSsl ? 'https' : 'http'}://${endpoint}:${port}`,
@@ -39,7 +41,8 @@ export class StorageService implements OnModuleInit {
   }
 
   async onModuleInit(): Promise<void> {
-    await this.ensureBucket();
+    await this.ensureBucket(this.bucket);
+    await this.ensureBucket(this.releasesBucket);
   }
 
   async getPresignedUploadUrl(
@@ -63,12 +66,13 @@ export class StorageService implements OnModuleInit {
     filename: string,
     expiresIn = DEFAULT_EXPIRES_DOWNLOAD,
     disposition: 'attachment' | 'inline' = 'attachment',
+    bucket = this.bucket,
   ): Promise<string> {
     const safeName = filename.replace(/"/g, '');
     return getSignedUrl(
       this.s3,
       new GetObjectCommand({
-        Bucket: this.bucket,
+        Bucket: bucket,
         Key: key,
         ResponseContentDisposition: `${disposition}; filename="${safeName}"`,
       }),
@@ -93,18 +97,18 @@ export class StorageService implements OnModuleInit {
     await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
-  private async ensureBucket(): Promise<void> {
+  private async ensureBucket(bucket = this.bucket): Promise<void> {
     try {
-      await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      await this.s3.send(new HeadBucketCommand({ Bucket: bucket }));
       return;
     } catch {
       // bucket no existe, se intenta crear
     }
     try {
-      await this.s3.send(new CreateBucketCommand({ Bucket: this.bucket }));
-      this.logger.log(`Bucket "${this.bucket}" creado`);
+      await this.s3.send(new CreateBucketCommand({ Bucket: bucket }));
+      this.logger.log(`Bucket "${bucket}" creado`);
     } catch (err) {
-      this.logger.warn(`No se pudo crear el bucket "${this.bucket}": ${(err as Error).message}`);
+      this.logger.warn(`No se pudo crear el bucket "${bucket}": ${(err as Error).message}`);
     }
   }
 }

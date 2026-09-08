@@ -1,0 +1,235 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+env:
+  PNPM_VERSION: 10.12.1
+
+jobs:
+  build-tauri:
+    name: Build Tauri (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS: build universal (Apple Silicon + Intel en un solo binario).
+          - platform: macos-latest
+            os: macos
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            tauri-args: --target universal-apple-darwin
+            bundle-root: apps/tether_tauri/src-tauri/target/universal-apple-darwin/release/bundle
+          - platform: windows-latest
+            os: windows
+            rust-targets: ''
+            tauri-args: --bundles msi,nsis
+            bundle-root: apps/tether_tauri/src-tauri/target/release/bundle
+          - platform: ubuntu-22.04
+            os: linux
+            rust-targets: ''
+            tauri-args: --bundles deb,rpm,appimage
+            bundle-root: apps/tether_tauri/src-tauri/target/release/bundle
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/tether_tauri/src-tauri
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libssl-dev
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the app (Tauri)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+        run: |
+          pnpm --filter @tether/app-tauri build -- ${{ matrix.tauri-args }}
+
+      - name: List bundle output
+        shell: bash
+        run: |
+          echo "=== ${{ matrix.bundle-root }} ==="
+          ls -lR "${{ matrix.bundle-root }}" || true
+
+      - name: Stage artifacts
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          STAGING="release-artifacts/${VERSION}"
+          ROOT="${{ matrix.bundle-root }}"
+          mkdir -p "$STAGING"
+
+          # Copia los instaladores + artefactos del updater (.tar.gz / .zip + .sig)
+          # a un solo directorio de staging, manteniendo el nombre de archivo.
+          find "$ROOT" -type f \
+            \( -name '*.dmg' \
+            -o -name '*.msi' \
+            -o -name '*.exe' \
+            -o -name '*.deb' \
+            -o -name '*.rpm' \
+            -o -name '*.AppImage' \
+            -o -name '*.app.tar.gz' \
+            -o -name '*.zip' \
+            -o -name '*.sig' \) \
+            -exec cp {} "$STAGING"/ \;
+
+          echo "=== staged ==="
+          ls -lR "$STAGING"
+
+          # SHA256SUMS (excluye .sig, que se registra por separado como firma).
+          (
+            cd "$STAGING" || exit 1
+            HASH_BIN=""
+            if command -v sha256sum >/dev/null 2>&1; then HASH_BIN="sha256sum"; fi
+            if [ -z "$HASH_BIN" ] && command -v shasum >/dev/null 2>&1; then HASH_BIN="shasum -a 256"; fi
+            find . -type f ! -name '*.sig' ! -name 'SHA256SUMS' | while read -r f; do
+              sum=$($HASH_BIN "$f" 2>/dev/null | awk '{print $1}')
+              # shasum usa el prefijo ./; normalizamos al basename.
+              echo "$sum  $(basename "$f")"
+            done > SHA256SUMS
+          )
+
+          cat "$STAGING/SHA256SUMS"
+
+      - name: Upload artifacts to MinIO (releases bucket)
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          STAGING="release-artifacts/${VERSION}"
+          OS="${{ matrix.os }}"
+
+          curl -fsSL -o mc https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+          ./mc alias set tether "${{ secrets.S3_ENDPOINT }}" \
+            "${{ secrets.S3_ACCESS_KEY }}" "${{ secrets.S3_SECRET_KEY }}" --api S3v4
+
+          # Determiná la arquitectura a partir del nombre del archivo / OS.
+          infer_arch() {
+            local f="$1"
+            case "$OS" in
+              macos)
+                case "$f" in
+                  *aarch64*) echo aarch64 ;;
+                  *x86_64*)  echo x86_64 ;;
+                  *)         echo universal ;;
+                esac ;;
+              windows)
+                case "$f" in
+                  *aarch64*) echo aarch64 ;;
+                  *x64*|*-setup*) echo x86_64 ;;
+                  *) echo x86_64 ;;
+                esac ;;
+              linux)
+                case "$f" in
+                  *aarch64*|*arm64*) echo aarch64 ;;
+                  *) echo x86_64 ;;
+                esac ;;
+            esac
+          }
+
+          # Sube instaladores y bundles de updater (nunca .sig solo).
+          find "$STAGING" -type f ! -name '*.sig' ! -name 'SHA256SUMS' | while read -r f; do
+            filename=$(basename "$f")
+            arch=$(infer_arch "$filename")
+            ./mc cp "$f" "tether/releases/$VERSION/$OS/$arch/$filename" --quiet
+            echo "subido: releases/$VERSION/$OS/$arch/$filename"
+          done
+
+          # Sube las firmas (.sig) junto a cada bundle.
+          find "$STAGING" -type f -name '*.sig' | while read -r f; do
+            filename=$(basename "$f")
+            arch=$(infer_arch "$filename")
+            ./mc cp "$f" "tether/releases/$VERSION/$OS/$arch/$filename" --quiet
+          done
+
+      - name: Register release in backend
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          STAGING="release-artifacts/${VERSION}"
+          OS="${{ matrix.os }}"
+
+          infer_arch() {
+            local f="$1"
+            case "$OS" in
+              macos)
+                case "$f" in
+                  *aarch64*) echo aarch64 ;;
+                  *x86_64*)  echo x86_64 ;;
+                  *)         echo universal ;;
+                esac ;;
+              windows)
+                case "$f" in
+                  *aarch64*) echo aarch64 ;;
+                  *) echo x86_64 ;;
+                esac ;;
+              linux)
+                case "$f" in
+                  *aarch64*|*arm64*) echo aarch64 ;;
+                  *) echo x86_64 ;;
+                esac ;;
+            esac
+          }
+
+          # Solo registramos los bundles que el updater descarga (los que tienen .sig)
+          # más los instaladores "mayores" (dmg/msi/deb/rpm/appimage). Evitamos los .sig
+          # sueltos y SHA256SUMS.
+          find "$STAGING" -type f ! -name '*.sig' ! -name 'SHA256SUMS' | while read -r f; do
+            filename=$(basename "$f")
+            arch=$(infer_arch "$filename")
+            size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f")
+            checksum=$(grep " ${filename}$" "$STAGING/SHA256SUMS" | awk '{print $1}')
+            sig=$(cat "${f}.sig" 2>/dev/null || true)
+
+            curl -fsS -X POST "${{ vars.API_BASE_URL }}/releases" \
+              -H "x-api-key: ${{ secrets.RELEASES_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n \
+                --arg version "$VERSION" \
+                --arg platform "$OS" \
+                --arg arch "$arch" \
+                --arg filename "$filename" \
+                --arg s3key "releases/$VERSION/$OS/$arch/$filename" \
+                --argjson size "$size" \
+                --arg checksum "$checksum" \
+                --arg signature "$sig" \
+                '{version:$version, platform:$platform, arch:$arch, filename:$filename, s3Key:$s3key, size:$size, checksum:$checksum, signature:($signature | if . == "" then null else . end), channel:"stable"}')" \
+              || echo "::warning::No se pudo registrar $filename"
+          done
+
+      - name: Upload build artifacts (workflow artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tether-${{ matrix.os }}
+          path: release-artifacts/*
+          if-no-files-found: ignore

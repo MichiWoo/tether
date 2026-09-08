@@ -5,11 +5,11 @@ import Constellation from "@/components/Constellation.astro";
 import DemoWindow from "@/components/DemoWindow.astro";
 
 const PLATFORMS = [
-  { name: "macOS", tag: "Mac", note: "Apple Silicon + Intel" },
-  { name: "Windows", tag: "Win", note: "x64" },
-  { name: "Linux", tag: "Linux", note: "AppImage / .deb" },
-  { name: "iOS", tag: "iOS", note: "iPhone / iPad" },
-  { name: "Android", tag: "APK", note: "8.0+" },
+  { name: "macOS", tag: "Mac", note: "Apple Silicon + Intel", platform: "macos" },
+  { name: "Windows", tag: "Win", note: "x64", platform: "windows" },
+  { name: "Linux", tag: "Linux", note: "AppImage / .deb", platform: "linux" },
+  { name: "iOS", tag: "iOS", note: "iPhone / iPad", platform: "ios" },
+  { name: "Android", tag: "APK", note: "8.0+", platform: "android" },
 ];
 
 const FEATURES = [
@@ -147,19 +147,27 @@ const PLANS = [
       <header class="section__head">
         <span class="section__kicker">Descargas</span>
         <h2 class="section__title">Para todos<br />tus equipos.</h2>
-        <p class="section__lead">Los enlaces de descarga estarán disponibles con las próximas releases.</p>
+        <p class="section__lead">
+          Última versión: <span class="downloads__version" data-release-version>—</span>.
+          Los enlaces apuntan a la release más reciente publicada.
+        </p>
       </header>
 
-      <div class="downloads">
+      <div class="downloads" data-downloads>
         {
           PLATFORMS.map((p) => (
-            <a class="download" href="#" aria-disabled="true">
+            <a
+              class="download"
+              href="#"
+              data-download
+              data-platform={p.platform}
+            >
               <span class="download__tag">{p.tag}</span>
               <span class="download__info">
                 <span class="download__name">{p.name}</span>
                 <span class="download__note">{p.note}</span>
               </span>
-              <span class="download__cta">Próximamente</span>
+              <span class="download__cta" data-download-cta>Próximamente</span>
             </a>
           ))
         }
@@ -199,6 +207,41 @@ const PLANS = [
       <span class="footer__copy">© {new Date().getFullYear()} Tether. Conecta tus dispositivos.</span>
     </div>
   </footer>
+
+  <script>
+    // Resuelve las descargas contra el backend (GET /releases/latest).
+    // Es mejora progresiva: si el backend no responde, quedan en "Próximamente".
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL ?? "";
+    const versionEl = document.querySelector("[data-release-version]");
+    const arches = { x86_64: "x64", aarch64: "Apple Silicon", universal: "Universal" };
+
+    async function loadReleases() {
+      try {
+        const res = await fetch(`${API_BASE}/releases/latest?channel=stable`);
+        if (!res.ok) return;
+        const releases = await res.json();
+        if (!Array.isArray(releases) || releases.length === 0) return;
+
+        if (versionEl) versionEl.textContent = `v${releases[0].version}`;
+
+        document.querySelectorAll("[data-download]").forEach((el) => {
+          const platform = el.getAttribute("data-platform");
+          const match = releases.find((r) => r.platform === platform);
+          if (!match) return;
+          el.setAttribute("href", match.downloadUrl);
+          el.setAttribute("download", "");
+          const note = el.querySelector(".download__note");
+          if (note) note.textContent = arches[match.arch] ?? match.arch;
+          const cta = el.querySelector("[data-download-cta]");
+          if (cta) cta.textContent = "Descargar";
+        });
+      } catch {
+        /* sin conexión con el backend: se deja el estado por defecto */
+      }
+    }
+
+    loadReleases();
+  </script>
 </BaseLayout>
 
 <style>

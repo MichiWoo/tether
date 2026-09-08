@@ -17,6 +17,7 @@ import { FilesModule } from './files/files.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { TransfersModule } from './transfers/transfers.module.js';
 import { StatsModule } from './stats/stats.module.js';
+import { ReleasesModule } from './releases/releases.module.js';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { StatsModule } from './stats/stats.module.js';
     RealtimeModule,
     TransfersModule,
     StatsModule,
+    ReleasesModule,
   ],
   controllers: [AppController],
   providers: [

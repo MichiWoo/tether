@@ -15,6 +15,8 @@ export const envValidationSchema = Joi.object({
   MINIO_ACCESS_KEY: Joi.string().required(),
   MINIO_SECRET_KEY: Joi.string().required(),
   MINIO_BUCKET: Joi.string().required(),
+  MINIO_RELEASES_BUCKET: Joi.string().default('releases'),
+  RELEASES_API_KEY: Joi.string().allow('').optional(),
   JWT_SECRET: Joi.string().min(32).required(),
   JWT_EXPIRES_IN: Joi.string().default('15m'),
   REFRESH_TOKEN_SECRET: Joi.string().min(32).required(),

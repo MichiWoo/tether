@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { Image as ImageIcon, KeyRound, Lock, Mail, Save, User } from "@lucide/vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  Download,
+  Image as ImageIcon,
+  KeyRound,
+  Lock,
+  Mail,
+  RefreshCw,
+  Save,
+  User,
+} from "@lucide/vue";
 import UiButton from "@/components/ui/UiButton.vue";
 import UiInput from "@/components/ui/UiInput.vue";
 import { showToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth";
 import { avatarFor, userDisplayName } from "@/core/types";
+import { checkForUpdates, installUpdate, subscribeUpdater, type UpdateState } from "@/core/updater";
 
 const auth = useAuthStore();
+
+const appVersion = "0.1.0";
 
 const name = ref(auth.user?.name ?? "");
 const avatarUrl = ref(auth.user?.avatarUrl ?? "");
@@ -19,6 +31,19 @@ const next = ref("");
 const confirm = ref("");
 const changingPassword = ref(false);
 const passwordError = ref<string | null>(null);
+
+const updateState = ref<UpdateState>({ status: "idle" });
+let unsubUpdate: (() => void) | null = null;
+
+onMounted(() => {
+  unsubUpdate = subscribeUpdater((state) => {
+    updateState.value = state;
+  });
+});
+
+onBeforeUnmount(() => {
+  unsubUpdate?.();
+});
 
 const resolvedAvatar = computed(() => (auth.user ? avatarFor(auth.user) : ""));
 const initial = computed(() => (auth.user ? userDisplayName(auth.user).charAt(0).toUpperCase() : ""));
@@ -150,6 +175,50 @@ async function changePassword() {
             <UiButton :disabled="changingPassword" @click="changePassword">
               <KeyRound :size="14" />
               Cambiar contraseña
+            </UiButton>
+          </div>
+        </div>
+      </section>
+
+      <!-- Actualizaciones -->
+      <section class="border border-fg bg-bg shadow-1bit">
+        <div class="flex items-center gap-2 border-b border-fg bg-fg px-4 py-2 text-bg">
+          <Download :size="14" />
+          <span class="font-display text-xs uppercase tracking-wide">Actualizaciones</span>
+        </div>
+        <div class="flex flex-col gap-3 p-4">
+          <p class="font-mono text-xs text-muted">
+            Versión actual:
+            <span class="text-fg">{{ appVersion }}</span>
+          </p>
+
+          <p v-if="updateState.status === 'available'" class="border border-fg bg-surface-2 p-3 font-mono text-xs text-fg">
+            Nueva versión disponible: v{{ updateState.version }}
+            <span v-if="updateState.notes" class="mt-1 block text-muted">{{ updateState.notes }}</span>
+          </p>
+          <p v-if="updateState.status === 'upToDate'" class="font-mono text-xs text-muted">
+            Estás en la última versión.
+          </p>
+          <p v-if="updateState.status === 'error'" class="border border-fg bg-surface-2 p-3 font-mono text-xs text-fg">
+            {{ updateState.error }}
+          </p>
+
+          <div class="flex items-center gap-2">
+            <UiButton
+              v-if="updateState.status === 'available'"
+              @click="installUpdate"
+            >
+              <Download :size="14" />
+              Instalar
+            </UiButton>
+            <UiButton
+              v-else
+              variant="secondary"
+              :disabled="updateState.status === 'checking'"
+              @click="checkForUpdates"
+            >
+              <RefreshCw :size="14" />
+              {{ updateState.status === "checking" ? "Buscando…" : "Buscar actualizaciones" }}
             </UiButton>
           </div>
         </div>

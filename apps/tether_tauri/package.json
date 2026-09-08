@@ -24,6 +24,8 @@
     "@tauri-apps/plugin-fs": "^2.5.2",
     "@tauri-apps/plugin-notification": "^2.4.0",
     "@tauri-apps/plugin-opener": "^2.5.5",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-updater": "^2.11.0",
     "axios": "^1.20.0",
     "pinia": "^4.0.3",
     "socket.io-client": "^4.8.3",

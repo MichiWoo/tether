@@ -109,6 +109,27 @@ enum ShareStatus {
   EXPIRED
 }
 
+model Release {
+  id          String   @id @default(cuid())
+  version     String
+  channel     String   @default("stable")
+  platform    String
+  arch        String
+  filename    String
+  s3Key       String
+  size        Int
+  checksum    String
+  signature   String?
+  notes       String?
+  publishedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([version, platform, arch])
+  @@index([channel, publishedAt])
+  @@map("releases")
+}
+
 model Share {
   id             String      @id @default(cuid())
   userId         String
