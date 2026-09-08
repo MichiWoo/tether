@@ -212,6 +212,7 @@ Archivo de referencia (desarrollo): `apps/backend/.env.example`; para despliegue
 | `MINIO_ENDPOINT` | **Sí** | — | Host del S3/MinIO |
 | `MINIO_PORT` | No | `9002` | Puerto del S3/MinIO |
 | `MINIO_USE_SSL` | No | `false` | Usar HTTPS contra S3 |
+| `MINIO_PUBLIC_ENDPOINT` | No | *(vacío)* | Endpoint público (TLS) para URLs presignadas accesibles desde el cliente |
 | `MINIO_ACCESS_KEY` | **Sí** | — | Access key S3 |
 | `MINIO_SECRET_KEY` | **Sí** | — | Secret key S3 |
 | `MINIO_BUCKET` | **Sí** | — | Bucket de objetos |

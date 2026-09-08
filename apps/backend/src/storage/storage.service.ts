@@ -19,6 +19,7 @@ const DEFAULT_EXPIRES_DOWNLOAD = 3600;
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
   private readonly s3: S3Client;
+  private readonly publicS3: S3Client | null;
   private readonly bucket: string;
   private readonly releasesBucket: string;
 
@@ -29,15 +30,29 @@ export class StorageService implements OnModuleInit {
     this.bucket = configService.get<string>('MINIO_BUCKET', 'tether');
     this.releasesBucket = configService.get<string>('MINIO_RELEASES_BUCKET', 'releases');
 
+    const credentials = {
+      accessKeyId: configService.get<string>('MINIO_ACCESS_KEY', 'minioadmin'),
+      secretAccessKey: configService.get<string>('MINIO_SECRET_KEY', 'minioadmin'),
+    };
+
     this.s3 = new S3Client({
       endpoint: `${useSsl ? 'https' : 'http'}://${endpoint}:${port}`,
       region: 'us-east-1',
       forcePathStyle: true,
-      credentials: {
-        accessKeyId: configService.get<string>('MINIO_ACCESS_KEY', 'minioadmin'),
-        secretAccessKey: configService.get<string>('MINIO_SECRET_KEY', 'minioadmin'),
-      },
+      credentials,
     });
+
+    // Endpoint público opcional para generar URLs presignadas accesibles desde
+    // fuera (TLS). Si no se define, se usa el endpoint interno del SDK.
+    const publicEndpoint = configService.get<string>('MINIO_PUBLIC_ENDPOINT');
+    this.publicS3 = publicEndpoint
+      ? new S3Client({
+          endpoint: publicEndpoint,
+          region: 'us-east-1',
+          forcePathStyle: true,
+          credentials,
+        })
+      : null;
   }
 
   async onModuleInit(): Promise<void> {
@@ -70,7 +85,7 @@ export class StorageService implements OnModuleInit {
   ): Promise<string> {
     const safeName = filename.replace(/"/g, '');
     return getSignedUrl(
-      this.s3,
+      this.publicS3 ?? this.s3,
       new GetObjectCommand({
         Bucket: bucket,
         Key: key,

@@ -74,17 +74,18 @@ releases/0.2.0/linux/x86_64/tether-app_0.2.0_amd64.AppImage
 
 ### TLS / acceso desde CI
 
-MinIO en el `docker-compose.yml` base queda en red interna (sin puerto público). Para
-que el CI pueda subir artefactos, expón MinIO a través del edge con TLS terminando en
-`minio:9000` (por ejemplo Caddy/Traefik/Dokploy en `https://s3.tether.app`).
+El backend se conecta a MinIO internamente (`MINIO_ENDPOINT` + puerto `9000`, sin TLS en
+la red interna). Para que el CI suba los artefactos, MinIO está expuesto al exterior con
+TLS terminado en el edge (`https://api.storage.woowebs.cloud`), que equivale a
+`minio:9000` interno. El cliente del CI usa mode path-style S3v4 contra ese endpoint.
 
 Credenciales (fuertes, distintas de dev) van a los secrets de CI:
 
 | Secret de CI | Descripción |
 |---|---|
-| `S3_ENDPOINT` | `https://s3.tether.app` |
-| `S3_ACCESS_KEY` | Access key de MinIO (con permiso al bucket `releases`) |
-| `S3_SECRET_KEY` | Secret key de MinIO |
+| `S3_ENDPOINT` | `https://api.storage.woowebs.cloud` |
+| `S3_ACCESS_KEY` | Access key de MinIO (la misma `MINIO_ACCESS_KEY`) |
+| `S3_SECRET_KEY` | Secret key de MinIO (la misma `MINIO_SECRET_KEY`) |
 | `RELEASES_API_KEY` | Key para `POST /releases` (coincide con `RELEASES_API_KEY` del backend) |
 | `TAURI_SIGNING_PRIVATE_KEY` | Clave privada minisign del proyecto |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | (opcional) password de la clave |
@@ -110,6 +111,7 @@ Modelo Prisma `Release` (ver `apps/backend/src/releases/`), con migración
 | Variable | Default | Descripción |
 |---|---|---|
 | `MINIO_RELEASES_BUCKET` | `releases` | Bucket de artefactos de releases |
+| `MINIO_PUBLIC_ENDPOINT` | *(vacío)* | Endpoint público (TLS) usado para firmar las URLs presignadas de descarga. Obligatorio en prod para que el updater/landing descarguen por HTTPS |
 | `RELEASES_API_KEY` | *(vacío = POST rechazado)* | API key para registrar releases desde CI |
 
 ## 5. Auto-actualización en la app
