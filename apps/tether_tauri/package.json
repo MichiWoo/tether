@@ -1,6 +1,6 @@
 {
   "name": "@tether/app-tauri",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Tether: portapapeles y transferencia de archivos entre tus dispositivos (Tauri + Vue)",
