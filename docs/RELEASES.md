@@ -144,6 +144,63 @@ Workflow en `.github/workflows/release.yml`:
 4. `node scripts/bump-version.mjs 0.2.0` + `git push --follow-tags`.
 5. Verificar `GET /releases/latest` y que la landing muestre los enlaces.
 
+## 7. Comandos para subir un release (tag)
+
+El workflow de CI se dispara con el push de un tag `v*`. Dos casos posibles:
+
+### 7.1 Publicar un release nuevo (bump de versión)
+
+Crea commit + tag y lo publica:
+
+```bash
+# Bumpea versión (actualiza package.json, tauri.conf.json y Cargo.toml) + commit + tag
+pnpm release 0.2.0
+
+# Sube commits y tags
+git push --follow-tags
+```
+
+> Nota: `git push --follow-tags` a veces no sube el tag si apunta al commit recién
+> pusheado en el mismo push. Si el tag no aparece en GitHub, subilo explícitamente
+> (ver 7.2).
+
+### 7.2 Re-disparar un tag existente (sin bumpear)
+
+GitHub **no re-ejecuta** un workflow para un tag que ya existe. Si necesitás reintentar
+(tras un fix al workflow, por ejemplo), hay que borrar y recrear el tag:
+
+```bash
+# Borra el tag remoto y local, y lo recrea sobre el commit actual de main
+git push origin :v0.2.0
+git tag -d v0.2.0
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+Esto es lo que se usa cada vez que cambió el código (fix de CI, nueva pubkey, etc.)
+y querés que el pipeline vuelva a correr sobre los cambios.
+
+### 7.3 Subir un tag puntual (sin bump, sin borrar)
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+### Verificar que el tag llegó
+
+```bash
+git ls-remote --tags origin
+```
+
+### Monitorear
+
+- GitHub → repo → **Actions** → workflow **"Release"**: 3 jobs en paralelo
+  (macOS / Windows / Linux).
+- Si falla la firma, revisar que `TAURI_SIGNING_PRIVATE_KEY` y
+  `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (secrets) coincidan con el keypair cuya
+  `pubkey` está embebida en `tauri.conf.json`.
+
 ## Referencias
 
 - Tauri updater: https://tauri.app/plugin/updater/
