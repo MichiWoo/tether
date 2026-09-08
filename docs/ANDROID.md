@@ -191,6 +191,10 @@ Notas:
 | Error `keyring`/`autostart` compilando para Android | Regresión desktop-only en `lib.rs`: gatear con `#[cfg(desktop)]` + stub `#[cfg(mobile)]` |
 | App abre pero no conecta | Revisar `VITE_API_BASE_URL` del build (en emulador usar `http://10.0.2.2:3100`; en físico, IP LAN o HTTPS prod). Release bloquea cleartext HTTP por defecto |
 | `adb devices` vacío | Activar depuración USB + aceptar el diálogo RSA en el móvil |
+| Falla `sdkmanager --licenses` en CI | Correrlo con `yes \|` delante y con `ANDROID_HOME` del runner (el job `build-android` ya lo hace) |
+| `apksigner` falla en CI con keystore corrupto | El secret `ANDROID_KEYSTORE_BASE64` debe ser de **una sola línea** (`tr -d '\n'` al generarlo); multilínea rompe el `base64 -d` |
+| `apksigner: keystore password was incorrect` | El password lleva un `\n` final: regenerar el secret con `printf '%s'` (sin salto de línea) |
+| `No key with alias 'tether'` | Revisar `ANDROID_KEY_ALIAS`; el alias del keystore se lista con `keytool -list -keystore ~/.config/tether/tether-release.jks` |
 
 ## Referencias
 

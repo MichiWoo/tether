@@ -94,6 +94,9 @@ Credenciales (fuertes, distintas de dev) van a los secrets de CI:
 | `RELEASES_API_KEY` | Key para `POST /releases` (coincide con `RELEASES_API_KEY` del backend) |
 | `TAURI_SIGNING_PRIVATE_KEY` | Clave privada minisign del proyecto |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | (opcional) password de la clave |
+| `ANDROID_KEYSTORE_BASE64` | Keystore `.jks` de firma Android en base64 de una línea (ver `ANDROID.md` punto 8) |
+| `ANDROID_KEYSTORE_PASSWORD` | Password del keystore Android (sin salto de línea) |
+| `ANDROID_KEY_ALIAS` | Alias de la clave en el keystore (`tether`) |
 
 ## 4. Backend — módulo `releases`
 
@@ -134,20 +137,24 @@ Modelo Prisma `Release` (ver `apps/backend/src/releases/`), con migración
 Workflow en `.github/workflows/release.yml`:
 
 - Disparo: `push` de tags `v*`.
-- Matrix de 3 runners:
+- Matrix de 3 runners (desktop):
   - `macos-latest` → `.dmg` + `.app.tar.gz` (aarch64 + x86_64)
   - `windows-latest` → `.msi` + `.exe` (NSIS)
   - `ubuntu-22.04` → `.deb` + `.rpm` + `.AppImage`
+- Job `build-android` (`ubuntu-22.04`): APK universal firmado
+  (`Tether_{version}_universal.apk`, detalle en `ANDROID.md` punto 8).
 - Steps: build Tauri (firmada) → recopilar + `SHA256SUMS` → subir a MinIO (`mc`) →
   `POST /releases` por artefacto.
 
 ### Primer despliegue (checklist)
 
 1. Generar keypair minisign y poner `pubkey` en `tauri.conf.json` + secret privado en CI.
-2. Definir los secrets/vars de CI (tabla del punto 3).
+2. Definir los secrets/vars de CI (tabla del punto 3), incluidos los 3 de Android
+   (`ANDROID_KEYSTORE_*`) si el release lleva APK.
 3. Exponer MinIO con TLS y configurar `MINIO_RELEASES_BUCKET` + `RELEASES_API_KEY` en `.env`.
 4. `node scripts/bump-version.mjs 0.2.0` + `git push --follow-tags`.
-5. Verificar `GET /releases/latest` y que la landing muestre los enlaces.
+5. Verificar `GET /releases/latest` y que la landing muestre los enlaces
+   (desktop + botón de Android cuando el job `build-android` registra el APK).
 6. En el `.env` de prod del servicio `web`, fijar
    `PUBLIC_API_BASE_URL=https://api.tether.woowebs.cloud` si el proxy
    mismo-origen (`/releases → backend:3100`) no alcanza al backend
@@ -209,11 +216,14 @@ git ls-remote --tags origin
 
 ### Monitorear
 
-- GitHub → repo → **Actions** → workflow **"Release"**: 3 jobs en paralelo
-  (macOS / Windows / Linux).
+- GitHub → repo → **Actions** → workflow **"Release"**: 4 jobs en paralelo
+  (macOS / Windows / Linux / Android APK).
 - Si falla la firma, revisar que `TAURI_SIGNING_PRIVATE_KEY` y
   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (secrets) coincidan con el keypair cuya
   `pubkey` está embebida en `tauri.conf.json`.
+- Si falla la firma del APK, revisar los secrets `ANDROID_KEYSTORE_*`
+  (base64 de una línea, password sin `\n` final, alias `tether`) y el detalle
+  en `ANDROID.md` punto 9.
 
 ## Referencias
 
