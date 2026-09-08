@@ -265,3 +265,132 @@ jobs:
           name: tether-${{ matrix.os }}
           path: release-artifacts/*
           if-no-files-found: ignore
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/tether_tauri/src-tauri
+
+      - name: Install Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Init Android project
+        # src-tauri/gen/ está gitignored: en CI hay que regenerarlo siempre.
+        run: pnpm --filter @tether/app-tauri tauri android init
+
+      - name: Build the app (Tauri Android APK)
+        env:
+          VITE_API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: pnpm --filter @tether/app-tauri tauri android build --apk --ci
+
+      - name: Sign APK with release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          OUT="apps/tether_tauri/src-tauri/gen/android/app/build/outputs/apk/universal/release"
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          UNSIGNED="$OUT/app-universal-release-unsigned.apk"
+          FINAL="release-artifacts/$VERSION/Tether_${VERSION}_universal.apk"
+          mkdir -p "release-artifacts/$VERSION"
+
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/tether-release.jks"
+
+          # El template de Tauri no siempre aplica firma en release: si el APK
+          # salió unsigned, se alinea y firma a mano con zipalign/apksigner.
+          if [ -f "$UNSIGNED" ] && ! "$BT/apksigner" verify "$UNSIGNED" >/dev/null 2>&1; then
+            "$BT/zipalign" -f 4 "$UNSIGNED" "$RUNNER_TEMP/app-aligned.apk"
+            "$BT/apksigner" sign --ks "$RUNNER_TEMP/tether-release.jks" \
+              --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+              --ks-key-alias "$ANDROID_KEY_ALIAS" \
+              --out "$FINAL" "$RUNNER_TEMP/app-aligned.apk"
+          else
+            cp "$UNSIGNED" "$FINAL"
+          fi
+          rm -f "$RUNNER_TEMP/tether-release.jks" "$RUNNER_TEMP/app-aligned.apk"
+
+          "$BT/apksigner" verify --print-certs "$FINAL" | head -3
+          "$BT/aapt" dump badging "$FINAL" | head -1
+
+          (
+            cd "release-artifacts/$VERSION" || exit 1
+            sha256sum "Tether_${VERSION}_universal.apk" > SHA256SUMS
+          )
+
+      - name: Upload APK to MinIO (releases bucket)
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          STAGING="release-artifacts/$VERSION"
+
+          curl -fsSL -o mc "https://dl.min.io/client/mc/release/linux-amd64/mc"
+          chmod +x mc
+          ./mc alias set tether "${{ secrets.S3_ENDPOINT }}" \
+            "${{ secrets.S3_ACCESS_KEY }}" "${{ secrets.S3_SECRET_KEY }}" --api S3v4
+
+          ./mc cp "$STAGING/Tether_${VERSION}_universal.apk" \
+            "tether/releases/$VERSION/android/universal/Tether_${VERSION}_universal.apk" --quiet
+          echo "subido: releases/$VERSION/android/universal/Tether_${VERSION}_universal.apk"
+
+      - name: Register release in backend
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          STAGING="release-artifacts/$VERSION"
+          filename="Tether_${VERSION}_universal.apk"
+          f="$STAGING/$filename"
+          size=$(stat -c%s "$f")
+          checksum=$(awk '{print $1}' "$STAGING/SHA256SUMS")
+
+          # Sin firma minisign (signature null): el APK queda fuera del manifest
+          # del auto-updater desktop e isPrimary lo convierte en el botón
+          # principal de Android en la landing.
+          curl -fsS -X POST "${{ secrets.API_BASE_URL }}/releases" \
+            -H "x-api-key: ${{ secrets.RELEASES_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg version "$VERSION" \
+              --arg filename "$filename" \
+              --arg s3key "$VERSION/android/universal/$filename" \
+              --argjson size "$size" \
+              --arg checksum "$checksum" \
+              '{version:$version, platform:"android", arch:"universal", filename:$filename, s3Key:$s3key, size:$size, checksum:$checksum, signature:null, channel:"stable", isPrimary:true}')" \
+            || echo "::warning::No se pudo registrar $filename"
+
+      - name: Upload build artifacts (workflow artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tether-android
+          path: release-artifacts/*
+          if-no-files-found: ignore

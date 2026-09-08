@@ -3,6 +3,11 @@
 Cómo se versionan, compilan, firman y distribuyen los bins de la app desktop (Tauri)
 para macOS / Windows / Linux, alojados en MinIO y expuestos vía API + landing.
 
+> 📱 El APK Android (Tauri móvil, `app.tether.app`) tiene su propia guía:
+> ver [`ANDROID.md`](./ANDROID.md) (entorno, keystore, build, firma e instalación).
+> En CI se genera en el mismo workflow (`release.yml`, job `build-android`) con
+> cada tag `v*` y se registra como `platform=android, arch=universal, isPrimary=true`.
+
 ## Resumen del flujo
 
 ```

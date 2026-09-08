@@ -35,5 +35,5 @@ keyring = { version = "3", features = ["windows-native"] }
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3", features = ["linux-native-sync-persistent"] }
 
-[target.'cfg(target_os = "android")'.dependencies]
-keyring = { version = "3", features = ["linux-native"] }
+# En Android no hay Secret Service/D-Bus: el almacenamiento seguro se
+# implementa en lib.rs con un archivo privado de la app (sin deps extra).

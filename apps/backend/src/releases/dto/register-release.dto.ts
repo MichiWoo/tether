@@ -11,7 +11,7 @@ import {
   Min,
 } from 'class-validator';
 
-export const RELEASE_PLATFORMS = ['macos', 'windows', 'linux'] as const;
+export const RELEASE_PLATFORMS = ['macos', 'windows', 'linux', 'android'] as const;
 export const RELEASE_ARCHS = ['x86_64', 'aarch64', 'universal', 'i686'] as const;
 export const RELEASE_CHANNELS = ['stable', 'beta'] as const;
 

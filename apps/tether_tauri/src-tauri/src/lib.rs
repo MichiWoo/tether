@@ -1,7 +1,9 @@
 use futures_util::StreamExt;
+#[cfg(desktop)]
 use keyring::Entry;
 use serde::Serialize;
 use tauri::{Emitter, Manager};
+#[cfg(desktop)]
 use tauri_plugin_autostart::ManagerExt as AutostartManagerExt;
 use tauri_plugin_dialog::DialogExt;
 use tokio::io::AsyncWriteExt;
@@ -27,9 +29,15 @@ fn platform_info() -> serde_json::Value {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Almacenamiento seguro (Keychain / Credential Manager / Secret Service)
+// Almacenamiento seguro (Keychain / Credential Manager / Secret Service
+// en escritorio; archivo privado de la app en móvil, donde no hay
+// Secret Service/D-Bus ni Keychain accesible desde Rust).
+//
+// Nota: `app: AppHandle` lo inyecta Tauri automáticamente, el frontend
+// sigue llamando a estos comandos igual que antes.
 // ─────────────────────────────────────────────────────────────
 
+#[cfg(desktop)]
 #[tauri::command]
 fn keyring_get(key: String) -> Result<Option<String>, String> {
     let entry = Entry::new(KEYRING_SERVICE, &key).map_err(|e| e.to_string())?;
@@ -40,16 +48,58 @@ fn keyring_get(key: String) -> Result<Option<String>, String> {
     }
 }
 
+#[cfg(desktop)]
 #[tauri::command]
 fn keyring_set(key: String, value: String) -> Result<(), String> {
     let entry = Entry::new(KEYRING_SERVICE, &key).map_err(|e| e.to_string())?;
     entry.set_password(&value).map_err(|e| e.to_string())
 }
 
+#[cfg(desktop)]
 #[tauri::command]
 fn keyring_delete(key: String) -> Result<(), String> {
     let entry = Entry::new(KEYRING_SERVICE, &key).map_err(|e| e.to_string())?;
     entry.delete_credential().map_err(|e| e.to_string())
+}
+
+#[cfg(mobile)]
+fn secure_file_path(app: &tauri::AppHandle, key: &str) -> Result<std::path::PathBuf, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let safe: String = key
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect();
+    Ok(dir.join(format!("secure-{safe}.dat")))
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+fn keyring_get(app: tauri::AppHandle, key: String) -> Result<Option<String>, String> {
+    let path = secure_file_path(&app, &key)?;
+    match std::fs::read_to_string(&path) {
+        Ok(value) => Ok(Some(value)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+fn keyring_set(app: tauri::AppHandle, key: String, value: String) -> Result<(), String> {
+    let path = secure_file_path(&app, &key)?;
+    std::fs::write(&path, value).map_err(|e| e.to_string())
+}
+
+#[cfg(mobile)]
+#[tauri::command]
+fn keyring_delete(app: tauri::AppHandle, key: String) -> Result<(), String> {
+    let path = secure_file_path(&app, &key)?;
+    match std::fs::remove_file(&path) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -64,6 +114,7 @@ struct PickedFile {
 }
 
 /// Abre el diálogo de selección de archivos y devuelve metadatos locales.
+#[cfg(desktop)]
 #[tauri::command]
 async fn pick_files(app: tauri::AppHandle) -> Result<Vec<PickedFile>, String> {
     let files = app
@@ -72,6 +123,27 @@ async fn pick_files(app: tauri::AppHandle) -> Result<Vec<PickedFile>, String> {
         .add_filter("Todos los archivos", &["*"])
         .blocking_pick_files();
 
+    map_picked_files(files)
+}
+
+/// En móvil no existen las variantes `blocking_*`: se usa el callback
+/// async del plugin dialog convertido a oneshot.
+#[cfg(mobile)]
+#[tauri::command]
+async fn pick_files(app: tauri::AppHandle) -> Result<Vec<PickedFile>, String> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .add_filter("Todos los archivos", &["*"])
+        .pick_files(move |files| {
+            let _ = tx.send(files);
+        });
+    let files = rx.await.map_err(|e| e.to_string())?;
+
+    map_picked_files(files)
+}
+
+fn map_picked_files(files: Option<Vec<tauri_plugin_dialog::FilePath>>) -> Result<Vec<PickedFile>, String> {
     let mut result = Vec::new();
     if let Some(files) = files {
         for file in files {
@@ -99,6 +171,7 @@ fn file_size(path: String) -> Result<u64, String> {
 }
 
 /// Abre el diálogo "guardar como" y devuelve la ruta elegida (o `None`).
+#[cfg(desktop)]
 #[tauri::command]
 async fn pick_download_path(
     app: tauri::AppHandle,
@@ -109,6 +182,24 @@ async fn pick_download_path(
         .file()
         .set_file_name(&suggested_name)
         .blocking_save_file();
+    Ok(res.and_then(|p| p.as_path().map(|p| p.to_string_lossy().to_string())))
+}
+
+/// Variante móvil del diálogo "guardar como" (sin `blocking_*`).
+#[cfg(mobile)]
+#[tauri::command]
+async fn pick_download_path(
+    app: tauri::AppHandle,
+    suggested_name: String,
+) -> Result<Option<String>, String> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .set_file_name(&suggested_name)
+        .save_file(move |res| {
+            let _ = tx.send(res);
+        });
+    let res = rx.await.map_err(|e| e.to_string())?;
     Ok(res.and_then(|p| p.as_path().map(|p| p.to_string_lossy().to_string())))
 }
 
@@ -258,15 +349,23 @@ fn build_tray(app: &tauri::App) -> tauri::Result<()> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init());
+
+    // Autostart y updater solo existen en escritorio: en móvil el crate de
+    // autostart está vacío (`#![cfg(not(mobile))]`) y las stores gestionan
+    // las actualizaciones. El frontend ya tolera el error del updater.
+    #[cfg(desktop)]
+    let builder = builder
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build());
+
+    builder
         .invoke_handler(tauri::generate_handler![
             platform_info,
             keyring_get,
