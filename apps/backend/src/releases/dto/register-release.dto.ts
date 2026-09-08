@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -66,4 +67,14 @@ export class RegisterReleaseDto {
   @IsString()
   @MaxLength(2000)
   notes?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Marca el instalador principal de la plataforma (un botón por OS en la landing). Solo uno por version+platform debería ser true.',
+    example: true,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
 }

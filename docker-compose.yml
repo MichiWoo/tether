@@ -92,6 +92,9 @@ services:
     build:
       context: apps/tether_web
       dockerfile: Dockerfile
+      # Vacío = la landing usa mismo-origen (/releases proxea al backend en nginx).
+      args:
+        PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-}
     restart: unless-stopped
     expose:
       - '80'

@@ -219,6 +219,18 @@ jobs:
             esac
           }
 
+          # Instalador principal por OS (un botón por OS en la landing):
+          # macos -> .dmg, windows -> .msi, linux -> .AppImage.
+          # Determinista por extensión para que jobs paralelos no compitan.
+          is_primary() {
+            local f="$1"
+            case "$OS" in
+              macos) case "$f" in *.dmg) echo true ;; *) echo false ;; esac ;;
+              windows) case "$f" in *.msi) echo true ;; *) echo false ;; esac ;;
+              linux) case "$f" in *.AppImage) echo true ;; *) echo false ;; esac ;;
+            esac
+          }
+
           # Solo registramos los bundles que el updater descarga (los que tienen .sig)
           # más los instaladores "mayores" (dmg/msi/deb/rpm/appimage). Evitamos los .sig
           # sueltos y SHA256SUMS.
@@ -228,6 +240,7 @@ jobs:
             size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f")
             checksum=$(grep " ${filename}$" "$STAGING/SHA256SUMS" | awk '{print $1}')
             sig=$(cat "${f}.sig" 2>/dev/null || true)
+            primary=$(is_primary "$filename")
 
             curl -fsS -X POST "${{ secrets.API_BASE_URL }}/releases" \
               -H "x-api-key: ${{ secrets.RELEASES_API_KEY }}" \
@@ -241,7 +254,8 @@ jobs:
                 --argjson size "$size" \
                 --arg checksum "$checksum" \
                 --arg signature "$sig" \
-                '{version:$version, platform:$platform, arch:$arch, filename:$filename, s3Key:$s3key, size:$size, checksum:$checksum, signature:($signature | if . == "" then null else . end), channel:"stable"}')" \
+                --argjson isPrimary "$primary" \
+                '{version:$version, platform:$platform, arch:$arch, filename:$filename, s3Key:$s3key, size:$size, checksum:$checksum, signature:($signature | if . == "" then null else . end), channel:"stable", isPrimary:$isPrimary}')" \
               || echo "::warning::No se pudo registrar $filename"
           done
 

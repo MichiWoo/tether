@@ -35,9 +35,11 @@ export class ReleasesService {
   }
 
   async register(dto: RegisterReleaseDto): Promise<ReleaseResponse> {
+    const channel = dto.channel ?? 'stable';
+    const isPrimary = dto.isPrimary ?? false;
     const data = {
       version: dto.version,
-      channel: dto.channel ?? 'stable',
+      channel,
       platform: dto.platform,
       arch: dto.arch,
       filename: dto.filename,
@@ -46,14 +48,30 @@ export class ReleasesService {
       checksum: dto.checksum,
       signature: dto.signature ?? null,
       notes: dto.notes ?? null,
+      isPrimary,
     };
+
+    // Solo un instalador principal por version+platform: si este registro es
+    // primario, se degradan los demás de la misma versión y plataforma.
+    if (isPrimary) {
+      await this.prisma.release.updateMany({
+        where: {
+          version: dto.version,
+          channel,
+          platform: dto.platform,
+          filename: { not: dto.filename },
+        },
+        data: { isPrimary: false },
+      });
+    }
 
     const release = await this.prisma.release.upsert({
       where: {
-        version_platform_arch: {
+        version_platform_arch_filename: {
           version: dto.version,
           platform: dto.platform,
           arch: dto.arch,
+          filename: dto.filename,
         },
       },
       create: data,
@@ -81,7 +99,7 @@ export class ReleasesService {
         ...(platform ? { platform } : {}),
         ...(arch ? { arch } : {}),
       },
-      orderBy: [{ platform: 'asc' }, { arch: 'asc' }],
+      orderBy: [{ isPrimary: 'desc' }, { platform: 'asc' }, { arch: 'asc' }],
     });
 
     return Promise.all(releases.map((r) => this.toResponse(r)));
@@ -90,7 +108,12 @@ export class ReleasesService {
   async listVersions(channel = 'stable'): Promise<ReleaseResponse[]> {
     const releases = await this.prisma.release.findMany({
       where: { channel },
-      orderBy: [{ publishedAt: 'desc' }, { platform: 'asc' }, { arch: 'asc' }],
+      orderBy: [
+        { publishedAt: 'desc' },
+        { isPrimary: 'desc' },
+        { platform: 'asc' },
+        { arch: 'asc' },
+      ],
     });
     return Promise.all(releases.map((r) => this.toResponse(r)));
   }
@@ -176,6 +199,7 @@ export class ReleasesService {
       checksum: release.checksum,
       signature: release.signature,
       notes: release.notes,
+      isPrimary: release.isPrimary,
       publishedAt: release.publishedAt.toISOString(),
       downloadUrl,
       expiresIn: RELEASE_DOWNLOAD_TTL,

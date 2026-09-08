@@ -9,6 +9,7 @@ export class ReleaseResponse {
   checksum: string;
   signature: string | null;
   notes: string | null;
+  isPrimary: boolean;
   publishedAt: string;
   downloadUrl: string;
   expiresIn: number;
@@ -26,5 +27,6 @@ export interface ReleaseRecordLike {
   checksum: string;
   signature: string | null;
   notes: string | null;
+  isPrimary: boolean;
   publishedAt: Date;
 }

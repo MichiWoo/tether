@@ -148,7 +148,7 @@ const PLANS = [
         <span class="section__kicker">Descargas</span>
         <h2 class="section__title">Para todos<br />tus equipos.</h2>
         <p class="section__lead">
-          Última versión: <span class="downloads__version" data-release-version>—</span>.
+          Última versión: <span class="downloads__version" data-release-version aria-live="polite">—</span>.
           Los enlaces apuntan a la release más reciente publicada.
         </p>
       </header>
@@ -158,9 +158,10 @@ const PLANS = [
           PLATFORMS.map((p) => (
             <a
               class="download"
-              href="#"
+              href="#descargas"
               data-download
               data-platform={p.platform}
+              aria-disabled="true"
             >
               <span class="download__tag">{p.tag}</span>
               <span class="download__info">
@@ -210,34 +211,82 @@ const PLANS = [
 
   <script>
     // Resuelve las descargas contra el backend (GET /releases/latest).
+    // Dinámico en runtime: el CI registra cada artefacto en Postgres vía
+    // POST /releases y la landing pide URLs presignadas frescas (TTL 7 días).
+    // Un botón por OS: prefiere `isPrimary` del API, con fallback por extensión
+    // (.dmg / .msi / .AppImage). iOS/Android quedan en "Próximamente".
     // Es mejora progresiva: si el backend no responde, quedan en "Próximamente".
     const API_BASE = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     const versionEl = document.querySelector("[data-release-version]");
     const arches = { x86_64: "x64", aarch64: "Apple Silicon", universal: "Universal" };
 
+    const PRIMARY_EXT = {
+      macos: [".dmg"],
+      windows: [".msi", "-setup.exe", ".exe"],
+      linux: [".AppImage", ".deb", ".rpm"],
+    };
+
+    function formatBytes(size) {
+      if (!Number.isFinite(size) || size <= 0) return "";
+      const units = ["B", "KB", "MB", "GB"];
+      let v = size;
+      let u = 0;
+      while (v >= 1024 && u < units.length - 1) {
+        v /= 1024;
+        u += 1;
+      }
+      return `${v >= 100 ? Math.round(v) : v.toFixed(1)} ${units[u]}`;
+    }
+
+    function pickPrimary(candidates, platform) {
+      const flagged = candidates.find((r) => r.isPrimary);
+      if (flagged) return flagged;
+      const exts = PRIMARY_EXT[platform] ?? [];
+      for (const ext of exts) {
+        const hit = candidates.find((r) =>
+          (r.filename ?? "").toLowerCase().endsWith(ext.toLowerCase()),
+        );
+        if (hit) return hit;
+      }
+      return candidates[0];
+    }
+
     async function loadReleases() {
+      let releases;
       try {
         const res = await fetch(`${API_BASE}/releases/latest?channel=stable`);
         if (!res.ok) return;
-        const releases = await res.json();
+        releases = await res.json();
         if (!Array.isArray(releases) || releases.length === 0) return;
-
-        if (versionEl) versionEl.textContent = `v${releases[0].version}`;
-
-        document.querySelectorAll("[data-download]").forEach((el) => {
-          const platform = el.getAttribute("data-platform");
-          const match = releases.find((r) => r.platform === platform);
-          if (!match) return;
-          el.setAttribute("href", match.downloadUrl);
-          el.setAttribute("download", "");
-          const note = el.querySelector(".download__note");
-          if (note) note.textContent = arches[match.arch] ?? match.arch;
-          const cta = el.querySelector("[data-download-cta]");
-          if (cta) cta.textContent = "Descargar";
-        });
       } catch {
         /* sin conexión con el backend: se deja el estado por defecto */
+        return;
       }
+
+      if (versionEl) versionEl.textContent = `v${releases[0].version}`;
+
+      document.querySelectorAll("[data-download]").forEach((el) => {
+        const platform = el.getAttribute("data-platform");
+        const candidates = releases.filter((r) => r.platform === platform);
+        if (candidates.length === 0) return;
+        const match = pickPrimary(candidates, platform);
+        if (!match?.downloadUrl) return;
+        el.setAttribute("href", match.downloadUrl);
+        el.setAttribute("download", "");
+        el.removeAttribute("aria-disabled");
+        el.setAttribute(
+          "title",
+          `${match.filename}${match.size ? ` (${formatBytes(match.size)})` : ""}`,
+        );
+        const note = el.querySelector(".download__note");
+        if (note) {
+          const archLabel = arches[match.arch] ?? match.arch;
+          const sizeLabel = match.size ? ` · ${formatBytes(match.size)}` : "";
+          note.textContent = `${archLabel}${sizeLabel}`;
+        }
+        const cta = el.querySelector("[data-download-cta]");
+        if (cta) cta.textContent = "Descargar";
+      });
     }
 
     loadReleases();

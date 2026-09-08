@@ -4,6 +4,10 @@
 FROM node:24-alpine AS build
 RUN npm install -g pnpm@10.12.1
 WORKDIR /app
+# Vacío = mismo-origen vía proxy nginx (/releases → backend:3100).
+# Solo definir si la landing debe apuntar directo al API (evita CORS si es externo).
+ARG PUBLIC_API_BASE_URL=""
+ENV PUBLIC_API_BASE_URL=$PUBLIC_API_BASE_URL
 COPY package.json ./
 RUN pnpm install
 COPY . .
