@@ -237,7 +237,7 @@ jobs:
                 --arg platform "$OS" \
                 --arg arch "$arch" \
                 --arg filename "$filename" \
-                --arg s3key "releases/$VERSION/$OS/$arch/$filename" \
+                --arg s3key "$VERSION/$OS/$arch/$filename" \
                 --argjson size "$size" \
                 --arg checksum "$checksum" \
                 --arg signature "$sig" \
