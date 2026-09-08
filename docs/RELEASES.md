@@ -143,6 +143,15 @@ Workflow en `.github/workflows/release.yml`:
 3. Exponer MinIO con TLS y configurar `MINIO_RELEASES_BUCKET` + `RELEASES_API_KEY` en `.env`.
 4. `node scripts/bump-version.mjs 0.2.0` + `git push --follow-tags`.
 5. Verificar `GET /releases/latest` y que la landing muestre los enlaces.
+6. En el `.env` de prod del servicio `web`, fijar
+   `PUBLIC_API_BASE_URL=https://api.tether.woowebs.cloud` si el proxy
+   mismo-origen (`/releases → backend:3100`) no alcanza al backend
+   (la landing pide las descargas en runtime y necesita una ruta que responda).
+
+> La landing resuelve los botones en el navegador con `fetch(<PUBLIC_API_BASE_URL>/releases/latest?channel=stable)`.
+> Si ves todo en "Próximamente": abrí DevTools → Network y mirá qué responde
+> esa request (502 = proxy roto; fallo CORS = falta el origen en `CORS_ORIGINS`
+> del backend; `[]` = DB sin releases registrados por el CI).
 
 ## 7. Comandos para subir un release (tag)
 
