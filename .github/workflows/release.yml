@@ -71,7 +71,7 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_API_BASE_URL: ${{ secrets.API_BASE_URL }}
         run: |
           pnpm --filter @tether/app-tauri build -- ${{ matrix.tauri-args }}
 
@@ -211,7 +211,7 @@ jobs:
             checksum=$(grep " ${filename}$" "$STAGING/SHA256SUMS" | awk '{print $1}')
             sig=$(cat "${f}.sig" 2>/dev/null || true)
 
-            curl -fsS -X POST "${{ vars.API_BASE_URL }}/releases" \
+            curl -fsS -X POST "${{ secrets.API_BASE_URL }}/releases" \
               -H "x-api-key: ${{ secrets.RELEASES_API_KEY }}" \
               -H "Content-Type: application/json" \
               -d "$(jq -n \
