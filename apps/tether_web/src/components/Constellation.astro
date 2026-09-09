@@ -1,6 +1,6 @@
 <script>
-  // Fondo de constelación one-bit: nodos y líneas en tinta pura, con una señal
-  // (cuadrado hueco) que viaja por las aristas — el "hilo" que conecta tus equipos.
+  // Fondo de constelación one-bit: nodos y líneas en tinta pura, con señales
+  // (cuadrado hueco) que viajan por las aristas — el "hilo" que conecta tus equipos.
   const canvas = document.querySelector('canvas#constellation');
   if (!canvas) throw new Error('missing canvas');
 
@@ -18,9 +18,25 @@
     [9, 13], [10, 14], [11, 15], [12, 16],
   ];
 
+  // Dos señales desfasadas medio recorrido, en tramos distintos del ciclo.
+  const SIGNALS = [
+    { offset: 0 },
+    { offset: Math.floor(EDGES.length / 2) + 0.5 },
+  ];
+
   const ctx = canvas.getContext('2d');
   let raf = 0;
   const start = performance.now();
+
+  function drawSignal(ctx, pts, pos, segCount) {
+    const seg = Math.floor(pos) % segCount;
+    const local = pos - Math.floor(pos);
+    const a = pts[EDGES[seg][0]];
+    const b = pts[EDGES[seg][1]];
+    const sx = a.x + (b.x - a.x) * local;
+    const sy = a.y + (b.y - a.y) * local;
+    ctx.strokeRect(sx - 4, sy - 4, 8, 8);
+  }
 
   function draw(now) {
     const w = canvas.clientWidth;
@@ -39,6 +55,7 @@
     const pts = NODES.map(([x, y]) => ({ x: x * w, y: y * h }));
 
     ctx.strokeStyle = color;
+    ctx.fillStyle = color;
     ctx.globalAlpha = 0.16;
     ctx.lineWidth = 1;
     for (const [a, b] of EDGES) {
@@ -48,22 +65,21 @@
       ctx.stroke();
     }
 
-    ctx.globalAlpha = 0.45;
-    for (const p of pts) {
-      ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+    // Nodos: pulso sutil — uno de cada cuatro respira en escala discreta.
+    for (let i = 0; i < pts.length; i++) {
+      const pulse = reducedMotion ? 0 : Math.sin(t * Math.PI / 3 + i);
+      const size = pulse > 0.85 ? 3 : 2;
+      const alpha = pulse > 0.85 ? 0.7 : 0.45;
+      ctx.globalAlpha = alpha;
+      ctx.fillRect(pts[i].x - size / 2, pts[i].y - size / 2, size, size);
     }
 
+    // Señales viajando las aristas.
     const segCount = EDGES.length;
-    const pos = t * segCount;
-    const seg = Math.floor(pos) % segCount;
-    const local = pos - Math.floor(pos);
-    const a = pts[EDGES[seg][0]];
-    const b = pts[EDGES[seg][1]];
-    const sx = a.x + (b.x - a.x) * local;
-    const sy = a.y + (b.y - a.y) * local;
     ctx.globalAlpha = 1;
-    ctx.strokeRect(sx - 4, sy - 4, 8, 8);
-    ctx.globalAlpha = 1;
+    for (const signal of SIGNALS) {
+      drawSignal(ctx, pts, t * segCount + signal.offset, segCount);
+    }
 
     if (!reducedMotion) raf = requestAnimationFrame(draw);
   }

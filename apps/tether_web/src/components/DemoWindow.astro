@@ -1,6 +1,7 @@
 ---
 // Ventana simulada de Tether: el producto haciendo su trabajo en el hero.
-// Muestra un ítem de clipboard llegando y un archivo en envío con progreso.
+// Clipboard y transferencias llegan en bucle (JS vanilla inline, respeta
+// prefers-reduced-motion: si hay, queda el estado estático por defecto).
 ---
 
 <div class="win">
@@ -23,11 +24,11 @@
     <div class="paper">
       <div class="paper__head">
         <span class="paper__title">Portapapeles</span>
-        <span class="paper__meta">de MacBook Pro</span>
+        <span class="paper__meta">de <span data-paper-device>MacBook Pro</span></span>
       </div>
       <div class="paper__item">
         <span class="dot dot--filled"></span>
-        <code>https://tether.app/download</code>
+        <code data-clipboard-text>https://tether.app/download</code>
       </div>
     </div>
 
@@ -37,11 +38,11 @@
       </span>
       <div class="transfer__body">
         <div class="transfer__meta">
-          <span>foto.png · 2.4 MB</span>
-          <span>78%</span>
+          <span><span data-file-name>foto.png</span> · <span data-file-size>2.4 MB</span></span>
+          <span><span data-file-pct>78</span>%</span>
         </div>
         <div class="transfer__track">
-          <div class="transfer__fill" style="width: 78%"></div>
+          <div class="transfer__fill" data-file-fill style="width: 78%"></div>
         </div>
       </div>
     </div>
@@ -97,11 +98,22 @@
     align-items: center;
     gap: 6px;
   }
+  /* Latido discreto del indicador (1-bit: on/off, no fade). */
   .win__status::before {
     content: "";
     width: 6px;
     height: 6px;
     background: var(--paper);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .win__status::before {
+      animation: beat 2.4s steps(1) infinite;
+    }
+    @keyframes beat {
+      0%, 100% { opacity: 1; }
+      92% { opacity: 0.35; }
+      96% { opacity: 1; }
+    }
   }
 
   .win__body {
@@ -156,10 +168,26 @@
     gap: 10px;
     padding: 12px;
     font-size: 13px;
+    overflow: hidden;
   }
   .paper__item code {
     font-family: var(--font-mono);
     color: var(--ink);
+    white-space: nowrap;
+  }
+  /* Llegada del ítem: entra en pasos discretos, coherente con 1-bit. */
+  .paper__item.arrive code {
+    animation: arrive 0.48s steps(4, end);
+  }
+  @keyframes arrive {
+    from {
+      transform: translateY(-8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 
   .dot {
@@ -222,3 +250,98 @@
     background: var(--ink);
   }
 </style>
+
+<script>
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!reduced) {
+    // --- Clipboard: ítems que llegan desde distintos dispositivos ---
+    const codeEl = document.querySelector("[data-clipboard-text]");
+    const deviceEl = document.querySelector("[data-paper-device]");
+    const itemEl = codeEl?.closest(".paper__item");
+    const CLIPBOARD = [
+      { text: "https://tether.app/download" },
+      { text: "¿reunión a las 17:00?" },
+      { text: "#282a36 · rgb(40 42 54)" },
+      { text: "ssh michi@10.0.0.12 -p 2222" },
+    ];
+    const DEVICES = ["MacBook Pro", "iPhone 16", "PC Escritorio", "iPad Air"];
+    const CLIP_PERIOD = 4200;
+
+    let clipIdx = 0;
+
+    function nextClipboardItem() {
+      clipIdx = (clipIdx + 1) % CLIPBOARD.length;
+      const clip = CLIPBOARD[clipIdx];
+      if (codeEl) codeEl.textContent = clip.text;
+      if (deviceEl) {
+        deviceEl.textContent = DEVICES[clipIdx % DEVICES.length];
+      }
+      if (itemEl) {
+        itemEl.classList.remove("arrive");
+        void itemEl.offsetWidth; // reinicia la animación
+        itemEl.classList.add("arrive");
+      }
+    }
+
+    setInterval(nextClipboardItem, CLIP_PERIOD);
+
+    // --- Transferencia: progreso discreto en bucle, un archivo por ciclo ---
+    const fillEl = document.querySelector("[data-file-fill]");
+    const pctEl = document.querySelector("[data-file-pct]");
+    const nameEl = document.querySelector("[data-file-name]");
+    const sizeEl = document.querySelector("[data-file-size]");
+    const FILES = [
+      { name: "foto.png", size: "2.4 MB" },
+      { name: "presentación.pdf", size: "8.1 MB" },
+      { name: "grabación.wav", size: "1.2 MB" },
+    ];
+    const STEP_PERCENT = 4;
+    const STEP_MS = 130; // ~3.2s por archivo
+    const HOLD_AT_FULL_MS = 1100;
+
+    let fileIdx = 0;
+    let step = 0;
+    let timer = 0;
+
+    function paintFile() {
+      const file = FILES[fileIdx];
+      if (nameEl) nameEl.textContent = file.name;
+      if (sizeEl) sizeEl.textContent = file.size;
+    }
+
+    function tickTransfer() {
+      step += 1;
+      const pct = step * STEP_PERCENT;
+      if (fillEl) fillEl.style.width = `${Math.min(pct, 100)}%`;
+      if (pctEl) pctEl.textContent = String(Math.min(pct, 100));
+      if (pct >= 100) {
+        step = 0;
+        fileIdx = (fileIdx + 1) % FILES.length;
+        paintFile();
+        timer = setTimeout(tickTransfer, HOLD_AT_FULL_MS);
+        return;
+      }
+      timer = setTimeout(tickTransfer, STEP_MS);
+    }
+
+    // Arranca la primera transferencia desde 0 tras un ciclo de clipboard.
+    setTimeout(() => {
+      step = 0;
+      fileIdx = 0;
+      paintFile();
+      if (fillEl) fillEl.style.width = "0%";
+      if (pctEl) pctEl.textContent = "0";
+      tickTransfer();
+    }, CLIP_PERIOD);
+
+    // Pausa fuera de vista: no genuina ciclos que nadie ve.
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        clearTimeout(timer);
+        timer = 0;
+      } else if (!timer && fillEl) {
+        tickTransfer();
+      }
+    });
+  }
+</script>

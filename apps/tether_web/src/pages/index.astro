@@ -52,6 +52,8 @@ const PLANS = [
   {
     name: "Gratis",
     desc: "Para empezar. Todo lo esencial, sin tarjeta.",
+    cta: "Descargar ahora",
+    href: "#descargas",
   },
   {
     name: "Pro",
@@ -75,7 +77,9 @@ const PLANS = [
     <Constellation />
     <div class="wrap hero__grid">
       <div class="hero__copy">
-        <p class="hero__kicker"><Mark size={22} /> Conecta tus dispositivos</p>
+        <p class="hero__kicker"><Mark size={22} /> Conecta tus dispositivos
+          <span class="hero__badge" data-release-badge hidden>v—</span>
+        </p>
         <h1 class="hero__title">Copia aquí,<br />pega allá.</h1>
         <p class="hero__lead">
           Tether estira tu portapapeles y tu estante de archivos a través de todos tus
@@ -91,6 +95,7 @@ const PLANS = [
       </div>
 
       <div class="hero__demo">
+        <div class="hero__dither dither-25" aria-hidden="true"></div>
         <DemoWindow />
         <p class="hero__demo-caption">Clipboard y archivos en vuelo. Izquierda a derecha, sin cables.</p>
       </div>
@@ -194,6 +199,11 @@ const PLANS = [
                 {p.flag && <span class="plan__flag">{p.flag}</span>}
               </div>
               <p class="plan__desc">{p.desc}</p>
+              {p.cta && (
+                <a class="btn btn--outline plan__cta" href={p.href}>
+                  {p.cta}
+                </a>
+              )}
             </article>
           ))
         }
@@ -206,6 +216,7 @@ const PLANS = [
     <div class="wrap footer__inner">
       <span class="footer__brand"><Mark size={20} /> Tether</span>
       <span class="footer__copy">© {new Date().getFullYear()} Tether. Conecta tus dispositivos.</span>
+      <a class="footer__link" href="#descargas">Descargar</a>
     </div>
   </footer>
 
@@ -218,6 +229,7 @@ const PLANS = [
     // Es mejora progresiva: si el backend no responde, quedan en "Próximamente".
     const API_BASE = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     const versionEl = document.querySelector("[data-release-version]");
+    const badgeEl = document.querySelector("[data-release-badge]");
     const arches = { x86_64: "x64", aarch64: "Apple Silicon", universal: "Universal" };
 
     const PRIMARY_EXT = {
@@ -265,6 +277,10 @@ const PLANS = [
       }
 
       if (versionEl) versionEl.textContent = `v${releases[0].version}`;
+      if (badgeEl) {
+        badgeEl.textContent = releases[0].version;
+        badgeEl.removeAttribute("hidden");
+      }
 
       document.querySelectorAll("[data-download]").forEach((el) => {
         const platform = el.getAttribute("data-platform");
@@ -320,8 +336,17 @@ const PLANS = [
     color: var(--muted);
     margin-bottom: var(--space-3);
   }
+  .hero__badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    padding: 2px 8px;
+  }
   .hero__title {
-    font-size: clamp(42px, 7vw, 76px);
+    font-size: clamp(34px, 8.5vw, 76px);
     letter-spacing: 0.02em;
   }
   .hero__lead {
@@ -345,7 +370,20 @@ const PLANS = [
   .hero__demo {
     position: relative;
   }
+  /* Panel dither anclado a la ventana de la demo, sin invadir la caption. */
+  .hero__dither {
+    position: absolute;
+    inset: 26px -16px 76px 26px;
+    border: 1px solid var(--ink);
+    opacity: 0.3;
+  }
+  /* La ventana (scoped en su componente) siempre sobre el panel. */
+  .hero__demo > :global(.win) {
+    position: relative;
+    z-index: 1;
+  }
   .hero__demo-caption {
+    position: relative;
     margin-top: var(--space-2);
     font-family: var(--font-mono);
     font-size: 11px;
@@ -474,6 +512,24 @@ const PLANS = [
     transform: translate(-2px, -2px);
     transition: transform 0.15s, box-shadow 0.15s;
   }
+  .download:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+  /* Sin release registrada: se ve deshabilitado, no clicable. */
+  .download[aria-disabled="true"] {
+    cursor: default;
+  }
+  .download[aria-disabled="true"]:hover {
+    box-shadow: none;
+    transform: none;
+  }
+  .download[aria-disabled="true"] .download__cta {
+    color: var(--muted);
+  }
+  .download[aria-disabled="true"] .download__tag {
+    opacity: 0.5;
+  }
   .download__tag {
     flex-shrink: 0;
     width: 44px;
@@ -488,6 +544,7 @@ const PLANS = [
   .download__info {
     display: flex;
     flex-direction: column;
+    flex: 1;
     min-width: 0;
   }
   .download__name {
@@ -500,9 +557,13 @@ const PLANS = [
     font-family: var(--font-mono);
     font-size: 11px;
     color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .download__cta {
     margin-left: auto;
+    flex-shrink: 0;
     font-family: var(--font-display);
     font-size: 10px;
     text-transform: uppercase;
@@ -551,6 +612,17 @@ const PLANS = [
     font-size: 13px;
     color: var(--gray-2);
   }
+  .plan__cta {
+    /* Sección invertida (fondo papel claro): el btn base asume tinta clara. */
+    margin-top: var(--space-1);
+    align-self: flex-start;
+    border-color: var(--paper);
+    color: var(--paper);
+  }
+  .plan__cta:hover {
+    background: var(--paper);
+    color: var(--ink);
+  }
 
   /* Footer */
   .footer {
@@ -577,6 +649,22 @@ const PLANS = [
     font-family: var(--font-mono);
     font-size: 12px;
     color: var(--muted);
+  }
+  .footer__link {
+    font-family: var(--font-display);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 14px;
+    border: 1px solid var(--ink);
+  }
+  .footer__link:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .footer__link:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
   }
 
   @media (max-width: 900px) {
