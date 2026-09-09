@@ -35,6 +35,26 @@ body,
   overflow: hidden;
 }
 
+/* Safe area for Android notch/status bar (requires viewport-fit=cover) */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@supports not (padding-top: env(safe-area-inset-top)) {
+  .safe-top {
+    padding-top: 0px;
+  }
+}
+
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 body {
   @apply bg-bg text-fg font-sans;
   user-select: none;

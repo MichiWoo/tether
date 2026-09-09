@@ -26,7 +26,7 @@ function ink(css: CSSStyleDeclaration): string {
   return m ? `rgb(${m[0]}, ${m[1]}, ${m[2]})` : "rgb(0,0,0)";
 }
 
-function draw(now: number) {
+function draw(now: number = performance.now()) {
   const el = canvas.value;
   if (!el) return;
   const ctx = el.getContext("2d");
@@ -66,13 +66,30 @@ function draw(now: number) {
 
   // Señal viajera (cuadrado hueco)
   const segCount = EDGES.length;
+  if (segCount === 0) {
+    if (!reducedMotion) raf = requestAnimationFrame(draw);
+    return;
+  }
   const pos = t * segCount;
-  const seg = Math.floor(pos) % segCount;
+  if (!Number.isFinite(pos)) {
+    if (!reducedMotion) raf = requestAnimationFrame(draw);
+    return;
+  }
+  const seg = ((Math.floor(pos) % segCount) + segCount) % segCount;
   const local = pos - Math.floor(pos);
-  const a = pts[EDGES[seg][0]];
-  const b = pts[EDGES[seg][1]];
-  const sx = a.x + (b.x - a.x) * local;
-  const sy = a.y + (b.y - a.y) * local;
+  const edge = EDGES[seg];
+  if (!edge) {
+    if (!reducedMotion) raf = requestAnimationFrame(draw);
+    return;
+  }
+  const pa = pts[edge[0]];
+  const pb = pts[edge[1]];
+  if (!pa || !pb) {
+    if (!reducedMotion) raf = requestAnimationFrame(draw);
+    return;
+  }
+  const sx = pa.x + (pb.x - pa.x) * local;
+  const sy = pa.y + (pb.y - pa.y) * local;
   ctx.globalAlpha = 1;
   ctx.strokeRect(sx - 4, sy - 4, 8, 8);
 

@@ -90,8 +90,11 @@ const realtimeLabel = computed(() => {
 
 <template>
   <div class="relative flex h-full w-full flex-col bg-bg">
-    <!-- Barra de menú -->
-    <header class="flex items-center gap-1 border-b border-fg bg-fg px-3 py-2 text-bg">
+    <!-- Barra de menú — Desktop -->
+    <header
+      class="safe-top hidden items-center gap-1 border-b border-fg bg-fg px-3 pb-2 pt-2 text-bg md:flex"
+      style="padding-top: calc(0.5rem + env(safe-area-inset-top, 0px))"
+    >
       <div class="flex items-center gap-2 pr-3">
         <span class="flex items-center gap-px">
           <span class="h-2.5 w-2.5 bg-bg" />
@@ -185,8 +188,87 @@ const realtimeLabel = computed(() => {
       </div>
     </header>
 
+    <!-- Barra de menú — Mobile minimal -->
+    <header
+      class="safe-top flex items-center justify-between border-b border-fg bg-fg px-3 pb-2 pt-2 text-bg md:hidden"
+      style="padding-top: calc(0.5rem + env(safe-area-inset-top, 0px))"
+    >
+      <div class="flex items-center gap-2">
+        <span class="flex items-center gap-px">
+          <span class="h-2 w-2 bg-bg" />
+          <span class="h-px w-1 bg-bg" />
+          <span class="h-2 w-2 border border-bg" />
+        </span>
+        <span class="font-display text-xs font-bold tracking-wide">TETHER</span>
+        <span
+          class="ml-1 inline-block h-1.5 w-1.5"
+          :class="
+            realtimeLabel.marker === 'filled'
+              ? 'bg-bg'
+              : realtimeLabel.marker === 'hollow'
+                ? 'border border-bg'
+                : 'stripes-paper'
+          "
+        />
+      </div>
+      <div class="flex items-center gap-1">
+        <button class="p-1.5 hover:bg-bg/20" aria-label="Cambiar tema" @click="ui.toggleTheme()">
+          <Moon v-if="ui.theme === 'dark'" :size="16" />
+          <Sun v-else :size="16" />
+        </button>
+        <div class="relative">
+          <button class="flex h-7 w-7 items-center justify-center overflow-hidden border border-bg" aria-label="Abrir menú de usuario" @click="menuOpen = !menuOpen">
+            <img
+              v-if="avatarUrl && !avatarErr"
+              :src="avatarUrl"
+              alt=""
+              class="h-full w-full object-cover"
+              @error="avatarErr = true"
+            />
+            <span v-else class="text-[10px] leading-none">{{ avatarInitial }}</span>
+          </button>
+          <div
+            v-if="menuOpen"
+            class="absolute right-0 top-full z-40 mt-1 w-60 border-2 border-fg bg-bg text-fg shadow-1bit"
+          >
+            <div class="flex items-center gap-3 border-b border-fg px-4 py-2.5">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden border border-fg">
+                <img
+                  v-if="avatarUrl && !avatarErr"
+                  :src="avatarUrl"
+                  alt=""
+                  class="h-full w-full object-cover"
+                  @error="avatarErr = true"
+                />
+                <span v-else class="font-display text-sm">{{ avatarInitial }}</span>
+              </div>
+              <div class="min-w-0">
+                <p class="truncate font-display text-xs uppercase">{{ userDisplayName(auth.user!) }}</p>
+                <p class="truncate font-mono text-xs text-muted">{{ auth.user?.email }}</p>
+              </div>
+            </div>
+            <button
+              class="flex w-full items-center gap-2 px-4 py-2.5 font-display text-xs uppercase hover:bg-surface-2"
+              @click="openProfile"
+            >
+              <User :size="15" />
+              Perfil
+            </button>
+            <button
+              class="flex w-full items-center gap-2 px-4 py-2.5 font-display text-xs uppercase hover:bg-surface-2"
+              @click="auth.logout()"
+            >
+              <LogOut :size="15" />
+              Cerrar sesión
+            </button>
+          </div>
+          <div v-if="menuOpen" class="fixed inset-0 z-30" @click="menuOpen = false" />
+        </div>
+      </div>
+    </header>
+
     <!-- Ventana -->
-    <main class="min-h-0 flex-1 p-3">
+    <main class="min-h-0 flex-1 p-3 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-3">
       <div class="flex h-full flex-col border border-fg bg-bg shadow-1bit">
         <div class="flex items-center justify-between border-b border-fg bg-fg px-3 py-1.5 text-bg">
           <span class="font-display text-xs uppercase tracking-wide">{{ sectionTitle }}</span>
@@ -205,6 +287,25 @@ const realtimeLabel = computed(() => {
         </div>
       </div>
     </main>
+
+    <!-- Navegación inferior — Mobile (iconos solo) -->
+    <nav
+      class="fixed inset-x-0 bottom-0 z-40 flex h-14 border-t-2 border-fg bg-fg md:hidden"
+      style="padding-bottom: env(safe-area-inset-bottom, 0px)"
+      aria-label="Navegación principal"
+    >
+      <button
+        v-for="section in sections"
+        :key="section.key"
+        :aria-label="section.label"
+        :aria-current="ui.section === section.key ? 'page' : undefined"
+        class="flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors"
+        :class="ui.section === section.key ? 'bg-bg text-fg' : 'text-bg/60 active:bg-bg/10'"
+        @click="ui.setSection(section.key)"
+      >
+        <component :is="section.icon" :size="20" :stroke-width="ui.section === section.key ? 2.2 : 1.8" />
+      </button>
+    </nav>
 
     <!-- Overlay de arrastre -->
     <div

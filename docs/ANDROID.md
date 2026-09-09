@@ -133,7 +133,55 @@ $BT/aapt dump badging $OUT/app-universal-release.apk | head -3
 ```bash
 adb devices                      # el móvil debe aparecer (depuración USB)
 adb install -r $OUT/app-universal-release.apk
+# Si ya existe con firma distinta: adb uninstall app.tether.app && adb install -r ...
 ```
+
+## 6.1 Pruebas rápidas en móvil / emulador (debug)
+
+Para validar el layout mobile (header con `env(safe-area-inset-top)`, bottom nav `env(safe-area-inset-bottom)` en `HomeShell.vue`, viewport `viewport-fit=cover` en `index.html`):
+
+**Prerrequisitos runtime:**
+```bash
+adb devices                      # emulator-5554 device (o físico)
+# Emulador: Android Studio -> AVD Manager -> Start (Pixel_8_Pro_API_35)
+```
+
+**Opción A — APK debug (recomendado, WebView real):**
+```bash
+cd apps/tether_tauri
+
+# Backend local (emulador): 10.0.2.2 mapea al host
+VITE_API_BASE_URL=http://10.0.2.2:3100 pnpm tauri android build --apk --debug --ci
+adb install -r src-tauri/gen/android/app/build/outputs/apk/*/debug/*.apk
+# Ver logs: adb logcat | grep -i tether
+# Inspeccionar WebView: Chrome desktop -> chrome://inspect -> Inspect en app.tether.app
+
+# Backend prod:
+VITE_API_BASE_URL=https://api.tether.woowebs.cloud pnpm tauri android build --apk --debug --ci
+adb install -r src-tauri/gen/android/app/build/outputs/apk/*/debug/*.apk
+```
+
+**Opción B — Live dev directo al emulador (sin APK, iteración rápida):**
+```bash
+cd apps/tether_tauri
+VITE_API_BASE_URL=http://10.0.2.2:3100 pnpm tauri android dev
+# Requiere emulador conectado; recarga automática al guardar
+```
+
+**Opción C — Solo WebView en navegador del emulador (más rápido, menos fiel):**
+```bash
+pnpm --filter @tether/app-tauri dev:web # host: http://localhost:1420
+# En emulador: Chrome -> http://10.0.2.2:1420  (o adb reverse tcp:1420 tcp:1420 -> http://localhost:1420)
+# Inspeccionar: chrome://inspect
+```
+
+**Verificación del safe-area:**
+```js
+// En consola de chrome://inspect (WebView o pestaña del emulador)
+getComputedStyle(document.querySelector('header')).paddingTop // ~24-44px con notch, 8px sin
+getComputedStyle(document.querySelector('nav')).paddingBottom // ~env(safe-area-inset-bottom)
+```
+El header debe separarse de la status bar y el bottom nav (4 iconos) no debe tapar el contenido (`main` lleva `pb-[calc(3.5rem+env(safe-area-inset-bottom))]`).
 
 ## 7. Notas de la adaptación móvil (ya aplicadas en el código)
 
