@@ -268,7 +268,7 @@ const realtimeLabel = computed(() => {
     </header>
 
     <!-- Ventana -->
-    <main class="min-h-0 flex-1 p-3 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-3">
+    <main class="min-h-0 flex-1 p-3 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-3">
       <div class="flex h-full flex-col border border-fg bg-bg shadow-1bit">
         <div class="flex items-center justify-between border-b border-fg bg-fg px-3 py-1.5 text-bg">
           <span class="font-display text-xs uppercase tracking-wide">{{ sectionTitle }}</span>
@@ -290,7 +290,7 @@ const realtimeLabel = computed(() => {
 
     <!-- Navegación inferior — Mobile (iconos solo) -->
     <nav
-      class="fixed inset-x-0 bottom-0 z-40 flex h-14 border-t-2 border-fg bg-fg md:hidden"
+      class="fixed inset-x-0 bottom-0 z-40 flex h-16 border-t-2 border-fg bg-fg md:hidden"
       style="padding-bottom: env(safe-area-inset-bottom, 0px)"
       aria-label="Navegación principal"
     >
@@ -299,11 +299,11 @@ const realtimeLabel = computed(() => {
         :key="section.key"
         :aria-label="section.label"
         :aria-current="ui.section === section.key ? 'page' : undefined"
-        class="flex flex-1 flex-col items-center justify-center gap-0.5 transition-colors"
+        class="flex flex-1 flex-col items-center justify-center gap-1 py-1 transition-colors"
         :class="ui.section === section.key ? 'bg-bg text-fg' : 'text-bg/60 active:bg-bg/10'"
         @click="ui.setSection(section.key)"
       >
-        <component :is="section.icon" :size="20" :stroke-width="ui.section === section.key ? 2.2 : 1.8" />
+        <component :is="section.icon" :size="26" :stroke-width="ui.section === section.key ? 2.4 : 2" />
       </button>
     </nav>
 
