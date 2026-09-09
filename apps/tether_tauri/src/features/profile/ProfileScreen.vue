@@ -19,7 +19,7 @@ import { checkForUpdates, installUpdate, subscribeUpdater, type UpdateState } fr
 
 const auth = useAuthStore();
 
-const appVersion = "0.1.0";
+const appVersion = import.meta.env.APP_VERSION as string;
 
 const name = ref(auth.user?.name ?? "");
 const avatarUrl = ref(auth.user?.avatarUrl ?? "");

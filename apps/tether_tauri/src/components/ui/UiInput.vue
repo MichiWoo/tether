@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, useId } from "vue";
 import { Eye, EyeOff } from "@lucide/vue";
 
 const props = withDefaults(
@@ -19,6 +19,9 @@ const emit = defineEmits<{
   (e: "submit"): void;
 }>();
 
+const inputId = useId();
+const errorId = useId();
+
 const isPassword = computed(() => props.type === "password");
 const showPassword = ref(false);
 const inputType = computed(() => (isPassword.value && !showPassword.value ? "password" : "text"));
@@ -30,7 +33,7 @@ function onInput(event: Event) {
 
 <template>
   <div class="w-full">
-    <label v-if="label" class="mb-1.5 block font-display text-[11px] uppercase tracking-wide text-fg">
+    <label v-if="label" :for="inputId" class="mb-1.5 block font-display text-[11px] uppercase tracking-wide text-fg">
       {{ label }}
     </label>
     <div
@@ -39,10 +42,13 @@ function onInput(event: Event) {
     >
       <slot name="leading" />
       <input
+        :id="inputId"
         :type="inputType"
         :value="modelValue"
         :placeholder="placeholder"
         :autofocus="autofocus"
+        :aria-invalid="error ? 'true' : undefined"
+        :aria-describedby="error ? errorId : undefined"
         class="w-full bg-transparent font-mono text-sm text-fg placeholder:text-muted focus:outline-none"
         @input="onInput"
         @keyup.enter="emit('submit')"
@@ -50,14 +56,15 @@ function onInput(event: Event) {
       <button
         v-if="isPassword"
         type="button"
-        tabindex="-1"
-        class="text-fg"
+        class="p-1 text-fg"
+        :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+        :aria-pressed="showPassword"
         @click="showPassword = !showPassword"
       >
         <component :is="showPassword ? EyeOff : Eye" :size="16" />
       </button>
     </div>
-    <p v-if="error" class="mt-1.5 flex items-center gap-1.5 font-mono text-xs text-fg">
+    <p v-if="error" :id="errorId" class="mt-1.5 flex items-center gap-1.5 font-mono text-xs text-fg">
       <span class="inline-block h-2 w-2 bg-fg" />
       {{ error }}
     </p>

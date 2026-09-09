@@ -1,9 +1,18 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { fileURLToPath, URL } from "node:url";
+import { readFileSync } from "node:fs";
+
+const pkg = JSON.parse(
+  readFileSync(fileURLToPath(new URL("./package.json", import.meta.url)), "utf8"),
+) as { version: string };
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    // Versión de la app single-source (package.json), disponible como env en runtime.
+    "import.meta.env.APP_VERSION": JSON.stringify(pkg.version),
+  },
   plugins: [vue()],
   resolve: {
     alias: {

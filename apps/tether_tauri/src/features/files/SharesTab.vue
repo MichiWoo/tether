@@ -81,8 +81,10 @@ async function cancel(share: Share) {
 <template>
   <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
     <div class="flex items-center justify-between border-b border-fg px-5 py-3">
-      <div class="flex border-2 border-fg">
+      <div class="flex border-2 border-fg" role="tablist" aria-label="Filtro de shares">
         <button
+          role="tab"
+          :aria-selected="filter === 'received'"
           class="px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
           :class="filter === 'received' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="filter = 'received'"
@@ -90,6 +92,8 @@ async function cancel(share: Share) {
           Recibidos
         </button>
         <button
+          role="tab"
+          :aria-selected="filter === 'sent'"
           class="border-l-2 border-fg px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
           :class="filter === 'sent' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="filter = 'sent'"
@@ -145,7 +149,8 @@ async function cancel(share: Share) {
             </UiButton>
             <button
               v-if="filter === 'received' && share.status !== 'EXPIRED' && share.status !== 'DOWNLOADED'"
-              class="border border-fg p-2 hover:bg-surface-2"
+              class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+              :aria-label="`Descargar ${share.file?.name ?? 'archivo'}`"
               title="Descargar"
               @click="download(share)"
             >
@@ -153,7 +158,8 @@ async function cancel(share: Share) {
             </button>
             <button
               v-if="filter === 'sent' && share.status === 'CREATED'"
-              class="border border-fg p-2 hover:bg-surface-2"
+              class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+              :aria-label="`Cancelar share de ${share.file?.name ?? 'archivo'}`"
               title="Cancelar"
               @click="cancel(share)"
             >

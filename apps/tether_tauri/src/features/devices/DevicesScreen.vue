@@ -107,10 +107,10 @@ onMounted(() => {
               :variant="device.isOnline ? 'outline' : 'dim'"
               :indicator="device.isOnline ? 'filled' : 'hollow'"
             />
-            <button class="border border-fg p-1.5 hover:bg-surface-2" @click.stop="openRename(device)">
+            <button class="border border-fg p-2 md:p-1.5 hover:bg-surface-2" :aria-label="`Renombrar ${device.name}`" @click.stop="openRename(device)">
               <Pencil :size="14" />
             </button>
-            <button class="border border-fg p-1.5 hover:bg-surface-2" @click.stop="openDelete(device)">
+            <button class="border border-fg p-2 md:p-1.5 hover:bg-surface-2" :aria-label="`Eliminar ${device.name}`" @click.stop="openDelete(device)">
               <Trash2 :size="14" />
             </button>
           </template>

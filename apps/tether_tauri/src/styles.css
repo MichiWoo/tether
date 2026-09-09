@@ -23,7 +23,8 @@
 .dark {
   --ink: 248 248 242;
   --paper: 40 42 54;
-  --muted: 98 114 164;
+  /* Dracula comment aclarado: ≥4.5:1 sobre --paper (AA en texto secundario). */
+  --muted: 139 156 201;
   --gray-2: 68 71 90;
 }
 

@@ -65,7 +65,7 @@ async function submit() {
           </span>
           <span class="font-display text-xs uppercase tracking-wide">Tether</span>
         </div>
-        <span class="font-display text-[10px] uppercase text-bg/70">
+        <span class="font-display text-[10px] uppercase text-bg/85">
           {{ isLogin() ? "Iniciar sesión" : "Crear cuenta" }}
         </span>
       </div>
@@ -80,8 +80,10 @@ async function submit() {
           </p>
         </div>
 
-        <div class="flex border-2 border-fg">
+        <div class="flex border-2 border-fg" role="tablist" aria-label="Modo de acceso">
           <button
+            role="tab"
+            :aria-selected="isLogin()"
             class="flex-1 px-3 py-2 font-display text-xs uppercase tracking-wide transition-colors"
             :class="isLogin() ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
             @click="setMode('login')"
@@ -89,6 +91,8 @@ async function submit() {
             Entrar
           </button>
           <button
+            role="tab"
+            :aria-selected="!isLogin()"
             class="flex-1 border-l-2 border-fg px-3 py-2 font-display text-xs uppercase tracking-wide transition-colors"
             :class="!isLogin() ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
             @click="setMode('register')"
@@ -125,7 +129,7 @@ async function submit() {
             <template #leading><Lock :size="16" class="text-fg" /></template>
           </UiInput>
 
-          <div v-if="auth.error" class="flex flex-col gap-2">
+          <div v-if="auth.error" class="flex flex-col gap-2" role="alert" aria-live="assertive">
             <ErrorBanner :message="auth.error" />
             <UiButton v-if="auth.isOffline" variant="secondary" :disabled="auth.isLoading" @click="auth.retryBootstrap()">
               <RefreshCw :size="14" />

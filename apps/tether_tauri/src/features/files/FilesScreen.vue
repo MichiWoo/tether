@@ -104,7 +104,11 @@ async function confirmShare(targetDeviceId?: string) {
           <div class="mt-1.5"><ProgressBar :value="t.progress" :error="!!t.error" /></div>
           <p v-if="t.error" class="mt-1 font-mono text-xs text-fg">{{ t.error }}</p>
         </div>
-        <button class="border border-fg p-1 hover:bg-surface-2" @click="files.dismissDownload(t.id)">
+        <button
+          class="border border-fg p-1.5 md:p-1 hover:bg-surface-2"
+          :aria-label="`Descartar descarga ${t.name}`"
+          @click="files.dismissDownload(t.id)"
+        >
           <X :size="14" />
         </button>
       </div>
@@ -120,7 +124,11 @@ async function confirmShare(targetDeviceId?: string) {
           <div class="mt-1.5"><ProgressBar :value="t.progress" :error="!!t.error" /></div>
           <p v-if="t.error" class="mt-1 font-mono text-xs text-fg">{{ t.error }}</p>
         </div>
-        <button class="border border-fg p-1 hover:bg-surface-2" @click="files.dismissUpload(t.id)">
+        <button
+          class="border border-fg p-1.5 md:p-1 hover:bg-surface-2"
+          :aria-label="`Descartar subida ${t.name}`"
+          @click="files.dismissUpload(t.id)"
+        >
           <X :size="14" />
         </button>
       </div>
@@ -128,8 +136,10 @@ async function confirmShare(targetDeviceId?: string) {
 
     <!-- Pestañas -->
     <div class="flex items-center border-b border-fg px-5 py-3">
-      <div class="flex border-2 border-fg">
+      <div class="flex border-2 border-fg" role="tablist" aria-label="Secciones de archivos">
         <button
+          role="tab"
+          :aria-selected="tab === 'files'"
           class="px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
           :class="tab === 'files' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="tab = 'files'"
@@ -137,6 +147,8 @@ async function confirmShare(targetDeviceId?: string) {
           Mis archivos
         </button>
         <button
+          role="tab"
+          :aria-selected="tab === 'shares'"
           class="border-l-2 border-fg px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
           :class="tab === 'shares' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="tab = 'shares'"
@@ -151,7 +163,7 @@ async function confirmShare(targetDeviceId?: string) {
     <!-- Mis archivos -->
     <div v-if="tab === 'files'" class="flex min-h-0 flex-1 flex-col">
       <div class="px-5 pt-3">
-        <div class="flex items-center justify-between border border-fg bg-bg px-4 py-4">
+        <div class="flex flex-col gap-3 border border-fg bg-bg px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div class="flex items-center gap-3">
             <div class="dither-25 flex h-12 w-12 shrink-0 items-center justify-center border border-fg bg-bg">
               <CloudUpload :size="24" class="text-fg" />
@@ -161,7 +173,7 @@ async function confirmShare(targetDeviceId?: string) {
               <p class="mt-1 font-mono text-xs text-muted">Se suben a tu almacenamiento.</p>
             </div>
           </div>
-          <UiButton variant="secondary" @click="files.pickAndUpload()">Seleccionar</UiButton>
+          <UiButton variant="secondary" class="sm:ml-4" @click="files.pickAndUpload()">Seleccionar</UiButton>
         </div>
       </div>
 
@@ -205,7 +217,8 @@ async function confirmShare(targetDeviceId?: string) {
             <template #trailing>
               <button
                 v-if="isUploaded(file)"
-                class="border border-fg p-2 hover:bg-surface-2"
+                class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+                :aria-label="`Compartir ${file.name}`"
                 title="Compartir con un dispositivo"
                 @click.stop="openShare(file)"
               >
@@ -213,14 +226,16 @@ async function confirmShare(targetDeviceId?: string) {
               </button>
               <button
                 v-if="isUploaded(file)"
-                class="border border-fg p-2 hover:bg-surface-2"
+                class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+                :aria-label="`Descargar ${file.name}`"
                 title="Descargar"
                 @click.stop="download(file)"
               >
                 <CloudDownload :size="14" />
               </button>
               <button
-                class="border border-fg p-2 hover:bg-surface-2"
+                class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+                :aria-label="`Eliminar ${file.name}`"
                 title="Eliminar"
                 @click.stop="deleteFile = file"
               >
