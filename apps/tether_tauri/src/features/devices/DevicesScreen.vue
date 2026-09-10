@@ -9,8 +9,11 @@ import UiButton from "@/components/ui/UiButton.vue";
 import UiDialog from "@/components/ui/UiDialog.vue";
 import UiInput from "@/components/ui/UiInput.vue";
 import DeviceIcon from "@/components/DeviceIcon.vue";
+import { showToast } from "@/components/ui/toast";
 import { useDevicesStore } from "@/stores/devices";
 import { platformInfo, platformOsToWire } from "@/core/platform";
+import { friendlyError } from "@/core/http";
+import { quotaMessage } from "@/core/plans";
 import { devicePlatformLabel, type Device } from "@/core/types";
 
 const devices = useDevicesStore();
@@ -51,7 +54,13 @@ async function submit() {
   const type = dialog.type;
   if (type === "register") {
     const info = await platformInfo();
-    await devices.register(dialog.name.trim(), platformOsToWire(info.os));
+    try {
+      await devices.register(dialog.name.trim(), platformOsToWire(info.os));
+    } catch (e) {
+      showToast(quotaMessage(e) ?? friendlyError(e), "error");
+      closeDialog();
+      return;
+    }
   } else if (type === "rename" && dialog.device) {
     await devices.rename(dialog.device.id, dialog.name.trim());
   } else if (type === "delete" && dialog.device) {
@@ -85,11 +94,11 @@ onMounted(() => {
         <template #icon><MonitorSmartphone :size="26" /></template>
       </EmptyState>
 
-      <div v-else class="flex flex-col gap-2 px-5 py-3">
-        <CardTile v-for="device in devices.devices" :key="device.id" clickable @click="openRename(device)">
+      <div v-else class="flex flex-col gap-3 px-5 py-3 [@media(pointer:coarse)]:gap-4 [@media(pointer:coarse)]:py-4">
+        <CardTile v-for="device in devices.devices" :key="device.id" clickable class="[@media(pointer:coarse)]:py-4" @click="openRename(device)">
           <template #leading>
-            <div class="flex h-9 w-9 items-center justify-center border border-fg">
-              <DeviceIcon :platform="device.platform" :size="18" class="text-fg" />
+            <div class="flex h-9 w-9 items-center justify-center border border-fg [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11">
+              <DeviceIcon :platform="device.platform" :size="18" class="text-fg [@media(pointer:coarse)]:h-5 [@media(pointer:coarse)]:w-5" />
             </div>
           </template>
           <template #title>
@@ -99,19 +108,28 @@ onMounted(() => {
             </div>
           </template>
           <template #subtitle>
-            <p class="mt-1 font-mono text-xs text-muted">{{ devicePlatformLabel(device.platform) }}</p>
+            <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <p class="font-mono text-xs text-muted">{{ devicePlatformLabel(device.platform) }}</p>
+              <StatusChip
+                class="[@media(pointer:fine)]:hidden"
+                :label="device.isOnline ? 'En línea' : 'Desconectado'"
+                :variant="device.isOnline ? 'outline' : 'dim'"
+                :indicator="device.isOnline ? 'filled' : 'hollow'"
+              />
+            </div>
           </template>
           <template #trailing>
             <StatusChip
+              class="hidden [@media(pointer:fine)]:flex"
               :label="device.isOnline ? 'En línea' : 'Desconectado'"
               :variant="device.isOnline ? 'outline' : 'dim'"
               :indicator="device.isOnline ? 'filled' : 'hollow'"
             />
-            <button class="border border-fg p-2 md:p-1.5 hover:bg-surface-2" :aria-label="`Renombrar ${device.name}`" @click.stop="openRename(device)">
-              <Pencil :size="14" />
+            <button class="border border-fg p-3 hover:bg-surface-2 [@media(pointer:fine)]:p-1.5" :aria-label="`Renombrar ${device.name}`" @click.stop="openRename(device)">
+              <Pencil :size="16" class="[@media(pointer:fine)]:h-3.5 [@media(pointer:fine)]:w-3.5" />
             </button>
-            <button class="border border-fg p-2 md:p-1.5 hover:bg-surface-2" :aria-label="`Eliminar ${device.name}`" @click.stop="openDelete(device)">
-              <Trash2 :size="14" />
+            <button class="border border-fg p-3 hover:bg-surface-2 [@media(pointer:fine)]:p-1.5" :aria-label="`Eliminar ${device.name}`" @click.stop="openDelete(device)">
+              <Trash2 :size="16" class="[@media(pointer:fine)]:h-3.5 [@media(pointer:fine)]:w-3.5" />
             </button>
           </template>
         </CardTile>

@@ -107,6 +107,12 @@ const sections: Array<{ key: Section; label: string; icon: typeof ClipboardPaste
   { key: "files", label: "Archivos", icon: FolderOpen },
 ];
 
+const dockLeft = sections.slice(0, 2).map((s) => ({ ...s, dock: s.key === "home" ? "Inicio" : "Equipos" }));
+const dockRight: Array<{ key: Section; label: string; icon: typeof ClipboardPaste; dock: string }> = [
+  { key: "files", label: "Archivos", icon: FolderOpen, dock: "Archivos" },
+  { key: "profile", label: "Perfil", icon: User, dock: "Perfil" },
+];
+
 const sectionTitle = computed(() => {
   if (ui.section === "profile") return "Perfil";
   return sections.find((s) => s.key === ui.section)?.label ?? "";
@@ -304,7 +310,11 @@ const realtimeLabel = computed(() => {
     </header>
 
     <!-- Ventana -->
-    <main class="min-h-0 flex-1 p-3" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
+    <main
+      class="min-h-0 flex-1 p-3 [@media(pointer:coarse)]:pb-[calc(5.25rem+env(safe-area-inset-bottom,0px))]"
+      @touchstart.passive="onTouchStart"
+      @touchend.passive="onTouchEnd"
+    >
       <div class="relative flex h-full flex-col border border-fg bg-bg shadow-1bit">
         <div
           class="relative z-20 flex items-center justify-between border-b border-fg bg-fg px-3 py-1.5 text-bg"
@@ -348,6 +358,60 @@ const realtimeLabel = computed(() => {
         </div>
       </div>
     </main>
+
+    <!-- Dock inferior — Mobile: secciones + acción primaria central -->
+    <nav
+      class="fixed inset-x-0 bottom-0 z-40 hidden border-t-2 border-fg bg-fg pb-[env(safe-area-inset-bottom,0px)] text-bg [@media(pointer:coarse)]:block"
+      aria-label="Navegación principal"
+    >
+      <div class="flex h-20 items-end pt-1">
+        <button
+          v-for="section in dockLeft"
+          :key="section.key"
+          class="flex h-full flex-1 flex-col items-center justify-center gap-1 pb-2"
+          :aria-label="section.label"
+          :aria-current="ui.section === section.key ? 'page' : undefined"
+          :class="ui.section === section.key ? 'bg-bg text-fg' : 'text-bg/60 active:bg-bg/10'"
+          @click="ui.setSection(section.key)"
+        >
+          <component :is="section.icon" :size="20" />
+          <span class="font-display text-[9px] uppercase tracking-wide">{{ section.dock }}</span>
+        </button>
+
+        <!-- Acción primaria muelle: Portapapeles -->
+        <button
+          class="relative flex flex-1 items-end justify-center"
+          :aria-label="'Portapapeles'"
+          :aria-current="ui.section === 'clipboard' ? 'page' : undefined"
+          @click="ui.setSection('clipboard')"
+        >
+          <span
+            class="absolute bottom-4 flex h-14 w-14 items-center justify-center border-2 border-fg bg-bg text-fg"
+          >
+            <ClipboardPaste :size="24" />
+          </span>
+          <span
+            class="mb-0.5 font-display text-[9px] uppercase tracking-wide"
+            :class="ui.section === 'clipboard' ? 'text-bg' : 'text-bg/60'"
+          >
+            Portapapeles
+          </span>
+        </button>
+
+        <button
+          v-for="section in dockRight"
+          :key="section.key"
+          class="flex h-full flex-1 flex-col items-center justify-center gap-1 pb-2"
+          :aria-label="section.label"
+          :aria-current="ui.section === section.key ? 'page' : undefined"
+          :class="ui.section === section.key ? 'bg-bg text-fg' : 'text-bg/60 active:bg-bg/10'"
+          @click="ui.setSection(section.key)"
+        >
+          <component :is="section.icon" :size="20" />
+          <span class="font-display text-[9px] uppercase tracking-wide">{{ section.dock }}</span>
+        </button>
+      </div>
+    </nav>
 
     <!-- Overlay de arrastre -->
     <div

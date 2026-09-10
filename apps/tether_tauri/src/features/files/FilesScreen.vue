@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   CloudDownload,
   CloudUpload,
@@ -23,6 +23,7 @@ import { showToast } from "@/components/ui/toast";
 import { useFilesStore } from "@/stores/files";
 import { useSharesStore } from "@/stores/shares";
 import { useDevicesStore } from "@/stores/devices";
+import { usePlansStore } from "@/stores/plans";
 import { formatDateTime } from "@/core/format";
 import { formatSize, isUploaded, type FileItem } from "@/core/types";
 import SharesTab from "./SharesTab.vue";
@@ -31,6 +32,16 @@ import DeviceIcon from "@/components/DeviceIcon.vue";
 const files = useFilesStore();
 const shares = useSharesStore();
 const devices = useDevicesStore();
+const plans = usePlansStore();
+
+const quotaBanner = computed(() => {
+  if (!plans.usage) return null;
+  const storagePct = Math.round((plans.usage.storageUsedBytes / plans.usage.limits.maxStorageBytes) * 100);
+  if (storagePct >= 80) {
+    return `Tu espacio está al ${storagePct}% (plan ${plans.usage.plan}). Libera archivos o cambia de plan.`;
+  }
+  return null;
+});
 
 const tab = ref<"files" | "shares">("files");
 const deleteFile = ref<FileItem | null>(null);
@@ -53,6 +64,7 @@ onMounted(() => {
   void files.load();
   void shares.load();
   void devices.load();
+  void plans.load();
 });
 
 async function download(file: FileItem) {
@@ -105,7 +117,7 @@ async function confirmShare(targetDeviceId?: string) {
           <p v-if="t.error" class="mt-1 font-mono text-xs text-fg">{{ t.error }}</p>
         </div>
         <button
-          class="border border-fg p-1.5 md:p-1 hover:bg-surface-2"
+          class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
           :aria-label="`Descartar descarga ${t.name}`"
           @click="files.dismissDownload(t.id)"
         >
@@ -125,7 +137,7 @@ async function confirmShare(targetDeviceId?: string) {
           <p v-if="t.error" class="mt-1 font-mono text-xs text-fg">{{ t.error }}</p>
         </div>
         <button
-          class="border border-fg p-1.5 md:p-1 hover:bg-surface-2"
+          class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
           :aria-label="`Descartar subida ${t.name}`"
           @click="files.dismissUpload(t.id)"
         >
@@ -140,7 +152,7 @@ async function confirmShare(targetDeviceId?: string) {
         <button
           role="tab"
           :aria-selected="tab === 'files'"
-          class="px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
+          class="px-4 py-1.5 [@media(pointer:coarse)]:px-5 [@media(pointer:coarse)]:py-3 font-display text-xs uppercase tracking-wide transition-colors"
           :class="tab === 'files' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="tab = 'files'"
         >
@@ -149,7 +161,7 @@ async function confirmShare(targetDeviceId?: string) {
         <button
           role="tab"
           :aria-selected="tab === 'shares'"
-          class="border-l-2 border-fg px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
+          class="border-l-2 border-fg px-4 py-1.5 [@media(pointer:coarse)]:px-5 [@media(pointer:coarse)]:py-3 font-display text-xs uppercase tracking-wide transition-colors"
           :class="tab === 'shares' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="tab = 'shares'"
         >
@@ -159,6 +171,7 @@ async function confirmShare(targetDeviceId?: string) {
     </div>
 
     <div v-if="files.error" class="px-5 pt-3"><ErrorBanner :message="files.error" /></div>
+    <div v-if="quotaBanner" class="px-5 pt-3"><ErrorBanner :message="quotaBanner" /></div>
 
     <!-- Mis archivos -->
     <div v-if="tab === 'files'" class="flex min-h-0 flex-1 flex-col">
@@ -193,7 +206,7 @@ async function confirmShare(targetDeviceId?: string) {
           <template #icon><FolderOpen :size="26" /></template>
         </EmptyState>
 
-        <div v-else class="flex flex-col gap-2 px-5 py-3">
+        <div v-else class="flex flex-col gap-2 px-5 py-3 [@media(pointer:coarse)]:gap-3 [@media(pointer:coarse)]:py-4">
           <CardTile
             v-for="file in files.files"
             :key="file.id"
@@ -217,7 +230,7 @@ async function confirmShare(targetDeviceId?: string) {
             <template #trailing>
               <button
                 v-if="isUploaded(file)"
-                class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+                class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
                 :aria-label="`Compartir ${file.name}`"
                 title="Compartir con un dispositivo"
                 @click.stop="openShare(file)"
@@ -226,7 +239,7 @@ async function confirmShare(targetDeviceId?: string) {
               </button>
               <button
                 v-if="isUploaded(file)"
-                class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+                class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
                 :aria-label="`Descargar ${file.name}`"
                 title="Descargar"
                 @click.stop="download(file)"
@@ -234,7 +247,7 @@ async function confirmShare(targetDeviceId?: string) {
                 <CloudDownload :size="14" />
               </button>
               <button
-                class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+                class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
                 :aria-label="`Eliminar ${file.name}`"
                 title="Eliminar"
                 @click.stop="deleteFile = file"

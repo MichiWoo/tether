@@ -85,7 +85,7 @@ async function cancel(share: Share) {
         <button
           role="tab"
           :aria-selected="filter === 'received'"
-          class="px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
+          class="px-4 py-1.5 [@media(pointer:coarse)]:px-5 [@media(pointer:coarse)]:py-3 font-display text-xs uppercase tracking-wide transition-colors"
           :class="filter === 'received' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="filter = 'received'"
         >
@@ -94,7 +94,7 @@ async function cancel(share: Share) {
         <button
           role="tab"
           :aria-selected="filter === 'sent'"
-          class="border-l-2 border-fg px-4 py-1.5 font-display text-xs uppercase tracking-wide transition-colors"
+          class="border-l-2 border-fg px-4 py-1.5 [@media(pointer:coarse)]:px-5 [@media(pointer:coarse)]:py-3 font-display text-xs uppercase tracking-wide transition-colors"
           :class="filter === 'sent' ? 'bg-fg text-bg' : 'bg-bg text-fg hover:bg-surface-2'"
           @click="filter = 'sent'"
         >
@@ -123,7 +123,7 @@ async function cancel(share: Share) {
         <template #icon><Inbox :size="26" /></template>
       </EmptyState>
 
-      <div v-else class="flex flex-col gap-2 px-5 py-3">
+      <div v-else class="flex flex-col gap-2 px-5 py-3 [@media(pointer:coarse)]:gap-3 [@media(pointer:coarse)]:py-4">
         <CardTile v-for="share in visible" :key="share.id">
           <template #leading>
             <div class="flex h-9 w-9 items-center justify-center border border-fg">
@@ -149,7 +149,7 @@ async function cancel(share: Share) {
             </UiButton>
             <button
               v-if="filter === 'received' && share.status !== 'EXPIRED' && share.status !== 'DOWNLOADED'"
-              class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+              class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
               :aria-label="`Descargar ${share.file?.name ?? 'archivo'}`"
               title="Descargar"
               @click="download(share)"
@@ -158,7 +158,7 @@ async function cancel(share: Share) {
             </button>
             <button
               v-if="filter === 'sent' && share.status === 'CREATED'"
-              class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+              class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
               :aria-label="`Cancelar share de ${share.file?.name ?? 'archivo'}`"
               title="Cancelar"
               @click="cancel(share)"

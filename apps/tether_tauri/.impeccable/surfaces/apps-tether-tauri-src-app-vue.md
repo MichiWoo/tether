@@ -23,3 +23,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 
 ## Update — Mobile navigation (2026-09-10)
 La barra inferior de iconos se elimina. En pointer:coarse, la barra de título de la ventana se vuelve selector de secciones: tap abre un panel invertido con las secciones, y el swipe horizontal (≥72px, <700ms, dx ≥ 2.2×dy) cicla entre las 4 secciones. Desktop conserva la barra de menú.
+
+## Update — Dock inferior móvil (2026-09-10, segunda ronda)
+El usuario optó por un dock fijo abajo inspirado en el patrón "FAB central" (a estilo 1-bit, sin círculos ni color): barra de tinta h-20 con 2 secciones a la izquierda (Inicio, Equipos), el botón primario sobresaliente **cuadrado papel 56px** central = Portapapeles, y 2 a la derecha (Archivos, Perfil). Rótulos silkscreen 9px; activo por inversión; safe-area-inset-bottom respetado; main recupera pb 5.25rem en coarse. El selector en title bar y el swipe siguen como acceso secundario.

@@ -72,7 +72,7 @@ watch(
   <div class="flex h-full flex-col">
     <div class="flex gap-2 border-b border-fg px-5 py-3">
       <UiInput v-model="text" placeholder="Texto para enviar…" class="flex-1" @submit="send" />
-      <UiButton @click="send"><Send :size="14" /> Enviar</UiButton>
+      <UiButton @click="send"><Send :size="14" /> <span class="[@media(pointer:coarse)]:hidden">Enviar</span></UiButton>
     </div>
 
     <div v-if="clipboard.error" class="px-5 pt-3">
@@ -92,7 +92,7 @@ watch(
         <template #icon><ClipboardPaste :size="26" /></template>
       </EmptyState>
 
-      <div v-else class="flex flex-col gap-2 px-5 py-3">
+      <div v-else class="flex flex-col gap-2 px-5 py-3 [@media(pointer:coarse)]:gap-3 [@media(pointer:coarse)]:py-4">
         <CardTile
           v-for="item in clipboard.items"
           :key="item.id"
@@ -115,18 +115,18 @@ watch(
             <div class="flex items-center gap-1.5">
               <button
                 v-if="isLong(item)"
-                class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+                class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
                 :aria-label="isCollapsed(item) ? 'Expandir ítem' : 'Colapsar ítem'"
                 @click.stop="toggle(item)"
               >
-                <component :is="isCollapsed(item) ? ChevronDown : ChevronUp" :size="14" />
+                <component :is="isCollapsed(item) ? ChevronDown : ChevronUp" :size="14" class="[@media(pointer:fine)]:h-3.5 [@media(pointer:fine)]:w-3.5" />
               </button>
               <button
-                class="border border-fg p-2.5 md:p-2 hover:bg-surface-2"
+                class="border border-fg p-3 [@media(pointer:fine)]:p-2 hover:bg-surface-2"
                 aria-label="Copiar al portapapeles"
                 @click.stop="copy(item)"
               >
-                <Copy :size="14" />
+                <Copy :size="14" class="[@media(pointer:fine)]:h-3.5 [@media(pointer:fine)]:w-3.5" />
               </button>
             </div>
           </template>
