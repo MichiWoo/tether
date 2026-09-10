@@ -20,3 +20,6 @@ FIRST VIEWPORT: Ventana de 1px bordeada, título "Tether" en Chicago caps con ba
 FORM: medium-native-one-bit-desktop (challenger ganador en ambos ejes). Seed 75e107a6.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance.
+
+## Update — Mobile navigation (2026-09-10)
+La barra inferior de iconos se elimina. En pointer:coarse, la barra de título de la ventana se vuelve selector de secciones: tap abre un panel invertido con las secciones, y el swipe horizontal (≥72px, <700ms, dx ≥ 2.2×dy) cicla entre las 4 secciones. Desktop conserva la barra de menú.

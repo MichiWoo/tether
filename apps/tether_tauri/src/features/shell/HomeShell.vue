@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
+  ChevronDown,
   ClipboardPaste,
   FolderOpen,
   LayoutDashboard,
@@ -28,8 +29,43 @@ const filesStore = useFilesStore();
 
 const rtStatus = computed(() => realtime.status.value);
 const menuOpen = ref(false);
+const switcherOpen = ref(false);
 const dragging = ref(false);
 const avatarErr = ref(false);
+const isCoarse = window.matchMedia("(pointer: coarse)").matches;
+
+let touchStart: { x: number; y: number; t: number } | null = null;
+
+function onTouchStart(e: TouchEvent) {
+  if (e.touches.length !== 1 || !isCoarse) return;
+  const t = e.touches[0];
+  const el = t.target as HTMLElement | null;
+  if (el?.closest("input, textarea, [data-no-swipe]")) return;
+  touchStart = { x: t.clientX, y: t.clientY, t: Date.now() };
+}
+
+function onTouchEnd(e: TouchEvent) {
+  const start = touchStart;
+  touchStart = null;
+  if (!start || !isCoarse) return;
+  const t = e.changedTouches[0];
+  if (!t) return;
+  const dx = t.clientX - start.x;
+  const dy = t.clientY - start.y;
+  const dt = Date.now() - start.t;
+  if (dt > 700 || Math.abs(dx) < 72 || Math.abs(dx) < 2.2 * Math.abs(dy)) return;
+  const idx = sections.findIndex((s) => s.key === ui.section);
+  if (idx === -1) return;
+  const next = dx < 0 ? idx + 1 : idx - 1;
+  if (next < 0 || next >= sections.length) return;
+  switcherOpen.value = false;
+  ui.setSection(sections[next].key);
+}
+
+function pickSection(key: Section) {
+  switcherOpen.value = false;
+  ui.setSection(key);
+}
 
 const avatarUrl = computed(() => (auth.user ? avatarFor(auth.user) : ""));
 const avatarInitial = computed(() =>
@@ -268,16 +304,41 @@ const realtimeLabel = computed(() => {
     </header>
 
     <!-- Ventana -->
-    <main class="min-h-0 flex-1 p-3 pb-3 [@media(pointer:coarse)]:pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
-      <div class="flex h-full flex-col border border-fg bg-bg shadow-1bit">
-        <div class="flex items-center justify-between border-b border-fg bg-fg px-3 py-1.5 text-bg">
-          <span class="font-display text-xs uppercase tracking-wide">{{ sectionTitle }}</span>
+    <main class="min-h-0 flex-1 p-3" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
+      <div class="relative flex h-full flex-col border border-fg bg-bg shadow-1bit">
+        <div
+          class="relative z-20 flex items-center justify-between border-b border-fg bg-fg px-3 py-1.5 text-bg"
+          :class="isCoarse ? 'cursor-pointer select-none' : ''"
+          :aria-expanded="switcherOpen"
+          @click="isCoarse && (switcherOpen = !switcherOpen)"
+        >
+          <span class="flex items-center gap-1.5 font-display text-xs uppercase tracking-wide">
+            {{ sectionTitle }}
+            <ChevronDown v-if="isCoarse" :size="13" class="transition-transform" :class="switcherOpen ? 'rotate-180' : ''" />
+          </span>
           <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 border border-bg" />
             <span class="h-2.5 w-2.5 border border-bg" />
             <span class="h-2.5 w-2.5 bg-bg" />
           </div>
+          <div
+            v-if="switcherOpen"
+            class="absolute left-0 top-full z-40 w-48 border-2 border-fg bg-bg text-fg shadow-1bit"
+            @click.stop="switcherOpen = false"
+          >
+            <button
+              v-for="section in sections"
+              :key="section.key"
+              class="flex w-full items-center gap-2 px-4 py-2.5 font-display text-xs uppercase hover:bg-surface-2"
+              :class="ui.section === section.key ? 'invert hover:invert' : ''"
+              @click="pickSection(section.key)"
+            >
+              <component :is="section.icon" :size="15" />
+              {{ section.label }}
+            </button>
+          </div>
         </div>
+        <div v-if="switcherOpen" class="fixed inset-0 z-10" @click="switcherOpen = false" />
         <div class="min-h-0 flex-1 overflow-hidden">
           <DashboardScreen v-if="ui.section === 'home'" />
           <DevicesScreen v-else-if="ui.section === 'devices'" />
@@ -287,25 +348,6 @@ const realtimeLabel = computed(() => {
         </div>
       </div>
     </main>
-
-    <!-- Navegación inferior — Mobile (iconos solo) -->
-    <nav
-      class="fixed inset-x-0 bottom-0 z-40 hidden border-t-2 border-fg bg-fg h-16 [@media(pointer:coarse)]:flex"
-      style="padding-bottom: env(safe-area-inset-bottom, 0px)"
-      aria-label="Navegación principal"
-    >
-      <button
-        v-for="section in sections"
-        :key="section.key"
-        :aria-label="section.label"
-        :aria-current="ui.section === section.key ? 'page' : undefined"
-        class="flex flex-1 flex-col items-center justify-center gap-1 py-1 transition-colors"
-        :class="ui.section === section.key ? 'bg-bg text-fg' : 'text-bg/60 active:bg-bg/10'"
-        @click="ui.setSection(section.key)"
-      >
-        <component :is="section.icon" :size="26" :stroke-width="ui.section === section.key ? 2.4 : 2" />
-      </button>
-    </nav>
 
     <!-- Overlay de arrastre -->
     <div
