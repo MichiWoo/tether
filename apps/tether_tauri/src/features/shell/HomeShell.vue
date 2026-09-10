@@ -92,7 +92,7 @@ const realtimeLabel = computed(() => {
   <div class="relative flex h-full w-full flex-col bg-bg">
     <!-- Barra de menú — Desktop -->
     <header
-      class="safe-top hidden items-center gap-1 border-b border-fg bg-fg px-3 pb-2 pt-2 text-bg md:flex"
+      class="safe-top hidden items-center gap-1 border-b border-fg bg-fg px-3 pb-2 pt-2 text-bg [@media(pointer:fine)]:flex"
       style="padding-top: calc(0.5rem + env(safe-area-inset-top, 0px))"
     >
       <div class="flex items-center gap-2 pr-3">
@@ -190,7 +190,7 @@ const realtimeLabel = computed(() => {
 
     <!-- Barra de menú — Mobile minimal -->
     <header
-      class="safe-top flex items-center justify-between border-b border-fg bg-fg px-3 pb-2 pt-2 text-bg md:hidden"
+      class="safe-top hidden items-center justify-between border-b border-fg bg-fg px-3 pb-2 pt-2 text-bg [@media(pointer:coarse)]:flex"
       style="padding-top: calc(0.5rem + env(safe-area-inset-top, 0px))"
     >
       <div class="flex items-center gap-2">
@@ -211,13 +211,13 @@ const realtimeLabel = computed(() => {
           "
         />
       </div>
-      <div class="flex items-center gap-1">
-        <button class="p-1.5 hover:bg-bg/20" aria-label="Cambiar tema" @click="ui.toggleTheme()">
-          <Moon v-if="ui.theme === 'dark'" :size="16" />
-          <Sun v-else :size="16" />
+      <div class="flex items-center gap-2">
+        <button class="p-2 hover:bg-bg/20" aria-label="Cambiar tema" @click="ui.toggleTheme()">
+          <Moon v-if="ui.theme === 'dark'" :size="18" />
+          <Sun v-else :size="18" />
         </button>
         <div class="relative">
-          <button class="flex h-7 w-7 items-center justify-center overflow-hidden border border-bg" aria-label="Abrir menú de usuario" @click="menuOpen = !menuOpen">
+          <button class="flex h-9 w-9 items-center justify-center overflow-hidden border border-bg" aria-label="Abrir menú de usuario" @click="menuOpen = !menuOpen">
             <img
               v-if="avatarUrl && !avatarErr"
               :src="avatarUrl"
@@ -225,7 +225,7 @@ const realtimeLabel = computed(() => {
               class="h-full w-full object-cover"
               @error="avatarErr = true"
             />
-            <span v-else class="text-[10px] leading-none">{{ avatarInitial }}</span>
+            <span v-else class="text-xs leading-none">{{ avatarInitial }}</span>
           </button>
           <div
             v-if="menuOpen"
@@ -268,7 +268,7 @@ const realtimeLabel = computed(() => {
     </header>
 
     <!-- Ventana -->
-    <main class="min-h-0 flex-1 p-3 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-3">
+    <main class="min-h-0 flex-1 p-3 pb-3 [@media(pointer:coarse)]:pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
       <div class="flex h-full flex-col border border-fg bg-bg shadow-1bit">
         <div class="flex items-center justify-between border-b border-fg bg-fg px-3 py-1.5 text-bg">
           <span class="font-display text-xs uppercase tracking-wide">{{ sectionTitle }}</span>
@@ -290,7 +290,7 @@ const realtimeLabel = computed(() => {
 
     <!-- Navegación inferior — Mobile (iconos solo) -->
     <nav
-      class="fixed inset-x-0 bottom-0 z-40 flex h-16 border-t-2 border-fg bg-fg md:hidden"
+      class="fixed inset-x-0 bottom-0 z-40 hidden border-t-2 border-fg bg-fg h-16 [@media(pointer:coarse)]:flex"
       style="padding-bottom: env(safe-area-inset-bottom, 0px)"
       aria-label="Navegación principal"
     >
