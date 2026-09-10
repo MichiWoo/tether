@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PlansService } from '../plans/plans.service.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
 import { EVENTS } from '../realtime/realtime-events.js';
 import { PushClipboardDto } from './dto/push-clipboard.dto.js';
@@ -13,6 +14,7 @@ const MAX_HISTORY = 100;
 export class ClipboardService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly plans: PlansService,
     private readonly realtime: RealtimeService,
   ) {}
 
@@ -52,6 +54,7 @@ export class ClipboardService {
         },
         include: { sourceDevice: true },
       });
+      await this.enforcePlanLimits(userId);
       const response = this.toResponse(item);
       this.realtime.emitToUser(userId, EVENTS.clipboardUpdated, {
         item: response,
@@ -90,6 +93,26 @@ export class ClipboardService {
       include: { sourceDevice: true },
     });
     return items.map((item) => this.toResponse(item));
+  }
+
+  private async enforcePlanLimits(userId: string): Promise<void> {
+    const limits = this.plans.limitsFor(await this.plans.getUserPlan(userId));
+    const retentionCutoff = new Date(Date.now() - limits.clipboardRetentionDays * 24 * 60 * 60 * 1000);
+    await this.prisma.clipboardItem.deleteMany({
+      where: { userId, createdAt: { lt: retentionCutoff } },
+    });
+
+    const overflow = await this.prisma.clipboardItem.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      skip: limits.clipboardHistoryItems,
+      select: { id: true },
+    });
+    if (overflow.length > 0) {
+      await this.prisma.clipboardItem.deleteMany({
+        where: { id: { in: overflow.map((item) => item.id) } },
+      });
+    }
   }
 
   private hashContent(content: string): string {

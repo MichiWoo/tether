@@ -6,6 +6,7 @@ interface ErrorResponseBody {
   statusCode: number;
   message: string | string[];
   error?: string;
+  code?: string;
   path: string;
   timestamp: string;
 }
@@ -22,6 +23,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
     let error = 'Internal Server Error';
+    let code: string | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -29,9 +31,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       if (typeof body === 'string') {
         message = body;
       } else if (body && typeof body === 'object') {
-        const candidate = body as { message?: string | string[]; error?: string };
+        const candidate = body as { message?: string | string[]; error?: string; code?: string };
         message = candidate.message ?? message;
         error = candidate.error ?? error;
+        code = candidate.code ?? (typeof (exception as { code?: string }).code === 'string' ? (exception as { code?: string }).code : undefined);
       }
     } else {
       this.logger.error(
@@ -44,6 +47,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: status,
       message,
       error,
+      code,
       path: request.url,
       timestamp: new Date().toISOString(),
     };

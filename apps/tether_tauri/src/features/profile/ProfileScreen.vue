@@ -16,6 +16,7 @@ import { showToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth";
 import { avatarFor, userDisplayName } from "@/core/types";
 import { checkForUpdates, installUpdate, subscribeUpdater, type UpdateState } from "@/core/updater";
+import PlanUsagePanel from "./PlanUsagePanel.vue";
 
 const auth = useAuthStore();
 
@@ -95,6 +96,9 @@ async function changePassword() {
 <template>
   <div class="h-full overflow-y-auto px-5 py-4">
     <div class="flex max-w-xl flex-col gap-4">
+      <!-- Uso y plan -->
+      <PlanUsagePanel />
+
       <!-- Perfil -->
       <section class="border border-fg bg-bg shadow-1bit">
         <div class="flex items-center gap-2 border-b border-fg bg-fg px-4 py-2 text-bg">

@@ -18,6 +18,7 @@ import { RealtimeModule } from './realtime/realtime.module.js';
 import { TransfersModule } from './transfers/transfers.module.js';
 import { StatsModule } from './stats/stats.module.js';
 import { ReleasesModule } from './releases/releases.module.js';
+import { PlansModule } from './plans/plans.module.js';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { ReleasesModule } from './releases/releases.module.js';
     TransfersModule,
     StatsModule,
     ReleasesModule,
+    PlansModule,
   ],
   controllers: [AppController],
   providers: [

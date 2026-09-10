@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { PlansService } from '../plans/plans.service.js';
 import { EVENTS } from '../realtime/realtime-events.js';
 import { FileStatus } from '../generated/prisma/client.js';
 import type { FileRecord } from '../generated/prisma/client.js';
@@ -18,9 +19,11 @@ export class FilesService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly realtime: RealtimeService,
+    private readonly plans: PlansService,
   ) {}
 
   async create(userId: string, dto: CreateFileDto): Promise<CreateFileResponse> {
+    await this.plans.assertFileUpload(userId, dto.size);
     const file = await this.prisma.fileRecord.create({
       data: {
         userId,
@@ -111,6 +114,20 @@ export class FilesService {
     await this.storage.deleteObject(objectKey(userId, fileId, file.name)).catch(() => undefined);
     await this.prisma.fileRecord.delete({ where: { id: fileId } });
     return { success: true };
+  }
+
+  async purgeStalePendingFiles(): Promise<number> {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const stale = await this.prisma.fileRecord.findMany({
+      where: { status: FileStatus.PENDING, createdAt: { lt: cutoff } },
+    });
+    for (const file of stale) {
+      await this.storage.deleteObject(objectKey(file.userId, file.id, file.name)).catch(() => undefined);
+    }
+    const result = await this.prisma.fileRecord.deleteMany({
+      where: { id: { in: stale.map((f) => f.id) } },
+    });
+    return result.count;
   }
 
   private async findOwnedFile(userId: string, fileId: string): Promise<FileRecord> {

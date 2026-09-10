@@ -29,7 +29,8 @@
     "axios": "^1.20.0",
     "pinia": "^4.0.3",
     "socket.io-client": "^4.8.3",
-    "vue": "^3.5.42"
+    "vue": "^3.5.42",
+    "@tether/protocol": "workspace:*"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",

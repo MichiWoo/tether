@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { PlansService } from '../plans/plans.service.js';
 import type { Device } from '../generated/prisma/client.js';
 import { CreateDeviceDto } from './dto/create-device.dto.js';
 import { UpdateDeviceDto } from './dto/update-device.dto.js';
@@ -9,9 +10,13 @@ const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 
 @Injectable()
 export class DevicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly plans: PlansService,
+  ) {}
 
   async create(userId: string, dto: CreateDeviceDto): Promise<DeviceResponse> {
+    await this.plans.assertDeviceRegister(userId);
     const device = await this.prisma.device.create({
       data: {
         userId,

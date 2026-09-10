@@ -4,8 +4,8 @@ import { TransfersService, JOB_EXPIRE_SHARES, JOB_SHARE_CREATED } from './transf
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
 import type { RealtimeService } from '../realtime/realtime.service.js';
-import type { ConfigService } from '@nestjs/config';
 import type { Queue } from 'bullmq';
+import type { PlansService } from '../plans/plans.service.js';
 
 const uploadedFile = {
   id: 'f1',
@@ -35,8 +35,16 @@ function createMocks() {
   const storage = { getPresignedDownloadUrl: vi.fn(), deleteObject: vi.fn() };
   const realtime = { emitToUser: vi.fn(), emitToDevice: vi.fn() };
   const config = { get: vi.fn((_k: string, d?: unknown) => d) };
-  const queue = { add: vi.fn() } as unknown as Queue;
-  return { prisma, storage, realtime, config, queue };
+  const plans = {
+    getUserPlan: vi.fn().mockResolvedValue('FREE'),
+    limitsFor: vi.fn().mockReturnValue({
+      shareTtlDays: 7,
+      monthlyTransferBytes: 5 * 1024 ** 3,
+    }),
+    assertTransfer: vi.fn().mockResolvedValue(undefined),
+  };
+  const queue = { add: vi.fn() };
+  return { prisma, storage, realtime, config, plans, queue };
 }
 
 describe('TransfersService', () => {
@@ -50,7 +58,7 @@ describe('TransfersService', () => {
       mocks.prisma as unknown as PrismaService,
       mocks.storage as unknown as StorageService,
       mocks.realtime as unknown as RealtimeService,
-      mocks.config as unknown as ConfigService,
+      mocks.plans as unknown as PlansService,
       mocks.queue,
     );
   });

@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { StorageService } from '../storage/storage.service.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { PlansService } from '../plans/plans.service.js';
 import { EVENTS } from '../realtime/realtime-events.js';
 import { FileStatus, ShareStatus } from '../generated/prisma/client.js';
 import { toFileResponse, objectKey } from '../files/file.mapper.js';
@@ -14,6 +14,7 @@ import type { ShareDetailResponse, ShareResponse, ShareWithFile } from './transf
 export const QUEUE_TRANSFERS = 'transfers';
 export const JOB_SHARE_CREATED = 'share:created';
 export const JOB_EXPIRE_SHARES = 'expire-shares';
+export const JOB_PURGE_PENDING = 'purge-pending';
 
 const DOWNLOAD_URL_TTL = 3600;
 
@@ -25,7 +26,7 @@ export class TransfersService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly realtime: RealtimeService,
-    private readonly configService: ConfigService,
+    private readonly plansService: PlansService,
     @InjectQueue(QUEUE_TRANSFERS) private readonly queue: Queue,
   ) {}
 
@@ -51,7 +52,7 @@ export class TransfersService {
       }
     }
 
-    const ttlDays = Number(this.configService.get<string>('SHARE_TTL_DAYS', '7'));
+    const ttlDays = await this.getPlanShareTtlDays(userId);
     const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
 
     const share = await this.prisma.share.create({
@@ -80,6 +81,9 @@ export class TransfersService {
 
   async getDetail(userId: string, shareId: string): Promise<ShareDetailResponse> {
     const share = await this.findOwnedShare(userId, shareId);
+    if (share.status !== ShareStatus.EXPIRED && share.file) {
+      await this.plansService.assertTransfer(userId, share.file.size);
+    }
     const downloadUrl =
       share.status !== ShareStatus.EXPIRED && share.file
         ? await this.storage.getPresignedDownloadUrl(
@@ -187,8 +191,11 @@ export class TransfersService {
     }
   }
 
-  private async findOwnedShare(userId: string, shareId: string): Promise<ShareWithFile> {
-    const share = await this.prisma.share.findFirst({
+  private async getPlanShareTtlDays(userId: string): Promise<number> {
+    return this.plansService.limitsFor(await this.plansService.getUserPlan(userId)).shareTtlDays;
+  }
+
+  private async findOwnedShare(userId: string, shareId: string): Promise<ShareWithFile> {    const share = await this.prisma.share.findFirst({
       where: { id: shareId, userId },
       include: { file: true },
     });

@@ -25,6 +25,7 @@ export const envValidationSchema = Joi.object({
   REFRESH_TOKEN_SECRET: Joi.string().min(32).required(),
   REFRESH_TOKEN_EXPIRES_IN: Joi.string().default('30d'),
   CORS_ORIGINS: Joi.string().allow('').optional(),
+  PLAN_ADMIN_KEY: Joi.string().allow('').optional(),
 });
 
 export const envValidationOptions: Joi.ValidationOptions = {

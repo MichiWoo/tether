@@ -13,6 +13,8 @@ model User {
   password      String
   name          String?
   avatarUrl     String?
+  plan          Plan           @default(FREE)
+  planChangedAt DateTime?
   devices       Device[]
   refreshTokens RefreshToken[]
   clipboardItems ClipboardItem[]
@@ -44,6 +46,12 @@ enum DevicePlatform {
   LINUX
   MACOS
   WEB
+}
+
+enum Plan {
+  FREE
+  PRO
+  UNLIMITS
 }
 
 model Device {

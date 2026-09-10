@@ -4,6 +4,7 @@ import { FilesService } from './files.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { StorageService } from '../storage/storage.service.js';
 import type { RealtimeService } from '../realtime/realtime.service.js';
+import type { PlansService } from '../plans/plans.service.js';
 
 const file = {
   id: 'f1',
@@ -35,13 +36,17 @@ function createMocks() {
     deleteObject: vi.fn(),
   };
   const realtime = { emitToUser: vi.fn() };
-  return { prisma, storage, realtime };
+  const plans = {
+    assertFileUpload: vi.fn().mockResolvedValue(undefined),
+  };
+  return { prisma, storage, realtime, plans };
 }
 
 describe('FilesService', () => {
   let prisma: ReturnType<typeof createMocks>['prisma'];
   let storage: ReturnType<typeof createMocks>['storage'];
   let realtime: ReturnType<typeof createMocks>['realtime'];
+  let plans: ReturnType<typeof createMocks>['plans'];
   let service: FilesService;
 
   beforeEach(() => {
@@ -50,10 +55,12 @@ describe('FilesService', () => {
     prisma = mocks.prisma;
     storage = mocks.storage;
     realtime = mocks.realtime;
+    plans = mocks.plans;
     service = new FilesService(
       prisma as unknown as PrismaService,
       storage as unknown as StorageService,
       realtime as unknown as RealtimeService,
+      plans as unknown as PlansService,
     );
   });
 

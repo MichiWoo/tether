@@ -17,6 +17,8 @@ export const ENDPOINTS = {
   files: "/files",
   shares: "/shares",
   stats: "/stats",
+  meUsage: "/me/usage",
+  mePlan: "/me/plan",
 } as const;
 
 export const deviceById = (id: string) => `/devices/${id}`;

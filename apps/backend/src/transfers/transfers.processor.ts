@@ -4,12 +4,17 @@ import {
   TransfersService,
   JOB_EXPIRE_SHARES,
   JOB_SHARE_CREATED,
+  JOB_PURGE_PENDING,
   QUEUE_TRANSFERS,
 } from './transfers.service.js';
+import { FilesService } from '../files/files.service.js';
 
 @Processor(QUEUE_TRANSFERS)
 export class TransfersProcessor extends WorkerHost {
-  constructor(private readonly transfersService: TransfersService) {
+  constructor(
+    private readonly transfersService: TransfersService,
+    private readonly filesService: FilesService,
+  ) {
     super();
   }
 
@@ -20,6 +25,9 @@ export class TransfersProcessor extends WorkerHost {
         break;
       case JOB_EXPIRE_SHARES:
         await this.transfersService.expireOverdue();
+        break;
+      case JOB_PURGE_PENDING:
+        await this.filesService.purgeStalePendingFiles();
         break;
       default:
         break;

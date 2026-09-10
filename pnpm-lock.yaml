@@ -218,6 +218,9 @@ importers:
       '@tauri-apps/plugin-updater':
         specifier: ^2.11.0
         version: 2.11.0
+      '@tether/protocol':
+        specifier: workspace:*
+        version: link:../../shared/protocol
       axios:
         specifier: ^1.20.0
         version: 1.20.0

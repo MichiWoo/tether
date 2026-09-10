@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ENDPOINTS, fileById, fileComplete, filePreview, http } from "@/core/http";
+import { quotaMessage } from "@/core/plans";
 import { realtime, RealtimeEvents } from "@/core/realtime";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -99,8 +100,8 @@ export const useFilesStore = defineStore("files", {
         uploadUrl = created.data.upload.url;
         contentType = created.data.upload.headers["Content-Type"] ?? "application/octet-stream";
         fileId = created.data.file.id;
-      } catch {
-        this.updateUpload(id, { error: "No se pudo registrar el archivo." });
+      } catch (e) {
+        this.updateUpload(id, { error: quotaMessage(e) ?? "No se pudo registrar el archivo." });
         return;
       }
 
@@ -245,11 +246,15 @@ function mimeFromName(name: string): string {
 }
 
 function uploadError(e: unknown): string {
+  const quota = quotaMessage(e);
+  if (quota) return quota;
   if (typeof e === "string") return e;
   return "No se pudo subir el archivo.";
 }
 
 function downloadError(e: unknown): string {
+  const quota = quotaMessage(e);
+  if (quota) return quota;
   if (typeof e === "string") return e;
   return "No se pudo descargar el archivo.";
 }

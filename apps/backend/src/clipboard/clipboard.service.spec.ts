@@ -4,6 +4,7 @@ import { Prisma } from '../generated/prisma/client.js';
 import { ClipboardService } from './clipboard.service.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import type { RealtimeService } from '../realtime/realtime.service.js';
+import type { PlansService } from '../plans/plans.service.js';
 
 const existingItem = {
   id: 'c1',
@@ -17,18 +18,27 @@ function createMocks() {
   const prisma = {
     device: { findFirst: vi.fn() },
     clipboardItem: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       findFirst: vi.fn(),
       create: vi.fn(),
-      findMany: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
     },
   };
   const realtime = { emitToUser: vi.fn() };
-  return { prisma, realtime };
+  const plans = {
+    getUserPlan: vi.fn().mockResolvedValue('FREE'),
+    limitsFor: vi.fn().mockReturnValue({
+      clipboardHistoryItems: 50,
+      clipboardRetentionDays: 30,
+    }),
+  };
+  return { prisma, realtime, plans };
 }
 
 describe('ClipboardService', () => {
   let prisma: ReturnType<typeof createMocks>['prisma'];
   let realtime: ReturnType<typeof createMocks>['realtime'];
+  let plans: ReturnType<typeof createMocks>['plans'];
   let service: ClipboardService;
 
   beforeEach(() => {
@@ -36,8 +46,10 @@ describe('ClipboardService', () => {
     const mocks = createMocks();
     prisma = mocks.prisma;
     realtime = mocks.realtime;
+    plans = mocks.plans;
     service = new ClipboardService(
       prisma as unknown as PrismaService,
+      plans as unknown as PlansService,
       realtime as unknown as RealtimeService,
     );
   });
