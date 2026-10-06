@@ -57,3 +57,46 @@ export interface PlanUsageResponse {
   clipboardItemsUsed: number;
   monthlyTransferWindow: { start: string; end: string };
 }
+
+export interface AdminPlan {
+  plan: PlanName;
+  title: string;
+  limits: PlanLimits;
+  updatedAt: string;
+}
+
+export type AdminPlansResponse = AdminPlan[];
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string | null;
+  plan: PlanName;
+  devices: number;
+  storageBytes: number;
+  transferBytesThisMonth: number;
+  createdAt: string;
+}
+
+export interface AdminUsersResponse {
+  items: AdminUser[];
+  total: number;
+  page: number;
+  take: number;
+}
+
+export interface PlanBucket {
+  plan: PlanName;
+  count?: number;
+  bytes?: number;
+}
+
+export interface AdminMetricsResponse {
+  usersByPlan: PlanBucket[];
+  storageByPlan: PlanBucket[];
+  transferByPlan: PlanBucket[];
+  activeDevices: number;
+  sharesActive: number;
+  sharesExpired: number;
+  monthStart: string;
+}

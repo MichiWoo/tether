@@ -21,6 +21,19 @@ function createMocks() {
     device: {
       count: vi.fn().mockResolvedValue(2),
     },
+    planLimits: {
+      findMany: vi.fn().mockResolvedValue([]),
+      upsert: vi.fn().mockResolvedValue({
+        plan: 'FREE',
+        maxStorageBytes: 3n * 1024n ** 3n,
+        maxFileSizeBytes: 150n * 1024n ** 2n,
+        monthlyTransferBytes: 5n * 1024n ** 3n,
+        maxDevices: 3,
+        shareTtlDays: 7,
+        clipboardHistoryItems: 50,
+        clipboardRetentionDays: 30,
+      }),
+    },
     clipboardItem: {
       count: vi.fn().mockResolvedValue(10),
     },
@@ -143,6 +156,50 @@ describe('PlansService', () => {
         where: { id: 'u1' },
         data: { plan: 'PRO', planChangedAt: expect.any(Date) },
       });
+    });
+  });
+
+  describe('limitsFor', () => {
+    it('devuelve los límites del código si la cache está vacía (fallback)', () => {
+      expect(service.limitsFor('FREE').maxStorageBytes).toBe(2 * GB);
+    });
+
+    it('devuelve límites cargados desde DB cuando la cache quedó poblada', async () => {
+      await service.updateLimits('FREE', {
+        maxStorageBytes: 3 * GB,
+        maxFileSizeBytes: 150 * MB,
+        monthlyTransferBytes: 5 * GB,
+        maxDevices: 3,
+        shareTtlDays: 7,
+        clipboardHistoryItems: 50,
+        clipboardRetentionDays: 30,
+      });
+      expect(prisma.planLimits.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { plan: 'FREE' },
+          update: expect.objectContaining({ maxStorageBytes: BigInt(3 * GB) }),
+        }),
+      );
+      expect(service.limitsFor('FREE').maxStorageBytes).toBe(3 * GB);
+    });
+  });
+
+  describe('listPlanRows', () => {
+    it('mapea BigInt a números', async () => {
+      prisma.planLimits.findMany.mockResolvedValue([
+        {
+          plan: 'PRO',
+          maxStorageBytes: 50n * 1024n ** 3n,
+          maxFileSizeBytes: 2n * 1024n ** 3n,
+          monthlyTransferBytes: 50n * 1024n ** 3n,
+          maxDevices: 10,
+          shareTtlDays: 30,
+          clipboardHistoryItems: 500,
+          clipboardRetentionDays: 365,
+        },
+      ]);
+      const rows = await service.listPlanRows();
+      expect(rows[0]).toMatchObject({ maxStorageBytes: 50 * GB, maxFileSizeBytes: 2 * GB });
     });
   });
 });

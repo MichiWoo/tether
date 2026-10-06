@@ -48,6 +48,22 @@ enum DevicePlatform {
   WEB
 }
 
+model PlanLimits {
+  plan                    Plan      @id
+  title                   String
+  maxStorageBytes         BigInt
+  maxFileSizeBytes        BigInt
+  monthlyTransferBytes    BigInt
+  maxDevices              Int
+  shareTtlDays            Int
+  clipboardHistoryItems   Int
+  clipboardRetentionDays  Int
+  updatedAt               DateTime  @updatedAt
+  createdAt               DateTime  @default(now())
+
+  @@map("plans")
+}
+
 enum Plan {
   FREE
   PRO

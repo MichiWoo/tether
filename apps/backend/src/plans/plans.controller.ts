@@ -1,4 +1,5 @@
-import { BadRequestException, Controller, ForbiddenException, Get, Body, Headers, Put, UseGuards } from '@nestjs/common';
+import { Controller, Get, Body, Put, UseGuards } from '@nestjs/common';
+import { HttpCode } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 import { IsIn } from 'class-validator';
 import type { PlanName } from '@tether/protocol';
@@ -6,9 +7,9 @@ import { PLAN_CODES } from '@tether/protocol';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { CurrentUser } from '../auth/decorators/current-user.decorator.js';
 import type { JwtUser } from '../auth/auth.types.js';
-import { ConfigService } from '@nestjs/config';
 import type { PlanUsageResponse } from '@tether/protocol';
 import { PlansService } from './plans.service.js';
+import { AdminKeyGuard } from './admin-key.guard.js';
 
 export class SetPlanDto {
   @ApiProperty({ enum: PLAN_CODES, example: 'PRO' })
@@ -21,10 +22,7 @@ export class SetPlanDto {
 @Controller('me')
 @UseGuards(JwtAuthGuard)
 export class PlansController {
-  constructor(
-    private readonly plansService: PlansService,
-    private readonly config: ConfigService,
-  ) {}
+  constructor(private readonly plansService: PlansService) {}
 
   @Get('usage')
   @ApiOperation({ summary: 'Uso actual del plan (storage, traspaso del mes, dispositivos, clipboards)' })
@@ -34,22 +32,16 @@ export class PlansController {
 
   @Put('plan')
   @ApiOperation({
-    summary: 'Cambiar plan del usuario (requiere X-Plan-Admin-Key)',
+    summary: 'Cambiar el propio plan (requiere X-Plan-Admin-Key)',
     description: 'Activación manual hasta integrar pasarela de pagos.',
   })
-  async setPlan(
+  @UseGuards(AdminKeyGuard)
+  @HttpCode(200)
+  setPlan(
     @CurrentUser() user: JwtUser,
     @Body() dto: SetPlanDto,
-    @Headers('x-plan-admin-key') adminKey?: string,
   ): Promise<{ plan: PlanName }> {
-    const expected = this.config.get<string>('PLAN_ADMIN_KEY');
-    if (expected && adminKey !== expected) {
-      throw new ForbiddenException('X-Plan-Admin-Key inválida');
-    }
-    if (!PLAN_CODES.includes(dto.plan)) {
-      throw new BadRequestException(`Plan inválido; use: ${PLAN_CODES.join(', ')}`);
-    }
-    const plan = await this.plansService.setPlan(user.id, dto.plan);
-    return { plan };
+    // La key la valida AdminKeyGuard; no hace falta seguir consultándola aquí.
+    return this.plansService.setPlan(user.id, dto.plan).then((plan) => ({ plan }));
   }
 }

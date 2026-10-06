@@ -27,14 +27,24 @@ async function main() {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     console.log(`Seed: el usuario admin "${email}" ya existe, se omite.`);
-    return;
+  } else {
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    await prisma.user.create({
+      data: { email, name, password: passwordHash },
+    });
+    console.log(`Seed: usuario admin "${email}" creado.`);
   }
 
-  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-  await prisma.user.create({
-    data: { email, name, password: passwordHash },
-  });
-  console.log(`Seed: usuario admin "${email}" creado.`);
+  const GB = (n) => BigInt(n) * 1024n * 1024n * 1024n;
+  const plans = [
+    { plan: 'FREE', title: 'Freemium', maxStorageBytes: GB(2), maxFileSizeBytes: 100 * 1024 * 1024, monthlyTransferBytes: GB(5), maxDevices: 3, shareTtlDays: 7, clipboardHistoryItems: 50, clipboardRetentionDays: 30 },
+    { plan: 'PRO', title: 'Pro', maxStorageBytes: GB(50), maxFileSizeBytes: 2 * 1024 * 1024 * 1024, monthlyTransferBytes: GB(50), maxDevices: 10, shareTtlDays: 30, clipboardHistoryItems: 500, clipboardRetentionDays: 365 },
+    { plan: 'UNLIMITS', title: 'Unlimits', maxStorageBytes: GB(500), maxFileSizeBytes: 5 * 1024 * 1024 * 1024, monthlyTransferBytes: GB(250), maxDevices: 20, shareTtlDays: 90, clipboardHistoryItems: 1000, clipboardRetentionDays: 730 },
+  ];
+  for (const p of plans) {
+    await prisma.planLimits.upsert({ where: { plan: p.plan }, update: {}, create: p });
+  }
+  console.log('Seed: límites de planes listos (FREE/PRO/UNLIMITS).');
 }
 
 main()
