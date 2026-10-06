@@ -121,6 +121,12 @@ async function doRefresh(): Promise<boolean> {
 // Extrae un mensaje legible del error del backend.
 export function friendlyError(error: unknown): string {
   if (error instanceof SessionExpiredError) return error.message;
+  // Fuera del webview de Tauri (p.ej. viendo localhost:1420 en un navegador)
+  // invoke() del keyring no existe; hoy fallaban todas las acciones con clave.
+  const raw = error instanceof Error ? error.message : String(error ?? "");
+  if (raw.includes("__TAURI_INTERNALS__") || raw.includes("__TAURI_IPC__")) {
+    return "Abre la app en su ventana nativa (tauri dev); el navegador no permite guardar tu sesión.";
+  }
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as { message?: string | string[] } | undefined;
     if (data?.message) {
