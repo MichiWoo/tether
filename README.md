@@ -20,7 +20,7 @@ Portapapeles y transferencia de archivos entre tus dispositivos (Windows, Linux,
 | Backend | **NestJS 11** (Node + TypeScript, ESM) |
 | Cliente desktop | **Tauri 2 + Vue 3** (TypeScript, Tailwind) |
 | Cliente móvil | **Flutter** (referencia funcional) |
-| Web / landing | **Astro 7** (estático, HTML/CSS sin framework) |
+| Web / landing | **Nuxt 4 + Nuxt UI + Nuxt Charts** (SSG estático) |
 | Base de datos | **PostgreSQL 16** con **Prisma 7** |
 | Realtime | **Socket.IO** |
 | Queues/Jobs | **BullMQ + Redis** |
@@ -68,7 +68,7 @@ Tether/
 │   │       ├── features/     # auth, shell, dashboard, devices, clipboard, files
 │   │       ├── stores/       # Pinia (auth, files, shares, stats, ...)
 │   │       └── core/         # http, realtime, theme, types
-│   ├── tether_web/           # Landing (Astro, estático) — apps/tether_web/src
+│   ├── tether_web/           # Landing + panel admin (Nuxt 4, SSG) — apps/tether_web/app
 │   └── tether_app/           # Cliente Flutter (referencia funcional)
 ├── shared/
 │   ├── protocol/             # DTOs y eventos WS compartidos (futuro)
@@ -106,6 +106,23 @@ pnpm dev:backend        # → http://localhost:3100
 ```
 
 La API queda disponible en `http://localhost:3100` y la Swagger UI en `http://localhost:3100/docs`.
+
+### Landing + Panel de administración (`apps/tether_web`)
+
+Landing público en Nuxt (`tether_web`) y panel admin del backend (planes, usuarios, métricas) en la ruta `/admin`.
+
+```bash
+# Dev server con HMR (usa NUXT_PUBLIC_API_BASE_URL para el API base)
+NUXT_PUBLIC_API_BASE_URL=http://localhost:3100 pnpm --filter @tether/web dev   # → http://localhost:3000/
+
+# Build de producción local (SSG → apps/tether_web/dist)
+pnpm --filter @tether/web build
+```
+
+- **Landing**: `http://localhost:3000/`
+- **Panel admin**: `http://localhost:3000/admin` → login con la key del backend `PLAN_ADMIN_KEY` (en dev: la de tu `apps/backend/.env`; en producción: la del `.env` del deploy). Guarda la key en `sessionStorage` mientras dure la pestaña.
+- **API en dev**: `NUXT_PUBLIC_API_BASE_URL=http://localhost:3100` (o `.env` local). Vacío = el dev server sirve la landing como si fuera prod (mismo-origen, sin proxy); para apuntar a otro backend cambia esa variable o usa la variable en línea (ver comando de arriba).
+- La key del panel **nunca se sube al repo**; vive solo en `.env` del backend. Se administra en `GET/PUT /admin/plans`, `GET /admin/users`, `PUT /admin/users/:id/plan` y `GET /admin/metrics` (todos con header `X-Plan-Admin-Key`).
 
 ### App Tauri (desktop)
 
@@ -153,7 +170,7 @@ El repositorio incluye imágenes multi-stage para el backend y la landing, y un 
 
 | Servicio | Imagen | Descripción |
 |---|---|---|
-| `web` | `apps/tether_web/Dockerfile` | nginx que sirve la landing estática (Astro) en `/` y proxya la API + WebSocket a `backend` |
+| `web` | `apps/tether_web/Dockerfile` | nginx que sirve la landing SSG (Nuxt `nuxt generate`) en `/` y proxya la API + WebSocket a `backend` |
 | `backend` | `apps/backend/Dockerfile` (target `runtime`) | API NestJS en `:3100`, interna (sin puerto al host) |
 | `migrate` | `apps/backend/Dockerfile` (target `build`) | one-shot: `prisma migrate deploy` + `prisma db seed` antes de arrancar el backend |
 | `postgres` / `redis` / `minio` | imágenes oficiales | infraestructura, solo red interna |
@@ -180,8 +197,9 @@ Al arrancar, el servicio `migrate` aplica las migraciones pendientes y ejecuta e
 
 `web` (nginx) escucha en `:80` y es el único servicio con puerto expuesto. En producción, un reverse proxy / edge (por ejemplo **Dokploy**) termina el TLS y apunta al puerto `80` del contenedor `web`. El nginx interno ya routea:
 
-- `/` → landing estática
-- `/docs`, `/docs-json`, `/auth`, `/devices`, `/clipboard`, `/files`, `/shares`, `/stats`, `/health` → `backend:3100`
+- `/` → landing estática + `/admin` (panel admin; login con `PLAN_ADMIN_KEY`)
+- `/docs`, `/docs-json`, `/auth`, `/devices`, `/clipboard`, `/files`, `/shares`, `/stats`, `/health`, `/admin`, `/me` → `backend:3100`
+- `/releases` → `backend:3100` (descargas y registro de releases)
 - `/realtime` → WebSocket a `backend:3100`
 
 ### Desarrollo local
@@ -218,6 +236,7 @@ Archivo de referencia (desarrollo): `apps/backend/.env.example`; para despliegue
 | `MINIO_BUCKET` | **Sí** | — | Bucket de objetos |
 | `MINIO_RELEASES_BUCKET` | No | `releases` | Bucket de artefactos de releases (Tauri) |
 | `RELEASES_API_KEY` | No | *(vacío)* | API key para `POST /releases` (usada por CI) |
+| `PLAN_ADMIN_KEY` | No | *(vacío)* | Header `X-Plan-Admin-Key`: protege `/admin/*` y `PUT /me/plan`; es la key de login del panel `/admin`. Vacío = administración deshabilitada (403) |
 | `JWT_SECRET` | **Sí** (≥32 chars) | — | Firma de access tokens |
 | `JWT_EXPIRES_IN` | No | `15m` | Duración del access token |
 | `REFRESH_TOKEN_SECRET` | **Sí** (≥32 chars) | — | Firma de refresh tokens |
@@ -393,10 +412,11 @@ pnpm --filter @tether/app-tauri dev:web      # solo UI en el navegador
 pnpm --filter @tether/app-tauri build        # tauri build (bundle nativo)
 pnpm --filter @tether/app-tauri typecheck    # vue-tsc --noEmit
 
-# Landing (Astro)
+# Landing + panel admin (Nuxt, SSG)
 pnpm --filter @tether/web dev                # dev server (HMR)
-pnpm --filter @tether/web build              # build estático → dist/
+pnpm --filter @tether/web build              # SSG → dist/ (nuxt generate)
 pnpm --filter @tether/web preview            # preview del build
+pnpm --filter @tether/web typecheck          # vue-tsc
 
 # Base de datos (Prisma)
 pnpm --filter @tether/backend prisma:generate

@@ -30,6 +30,8 @@ coverage/
 # Agent / skills tooling
 .agents/
 skills-lock.json
+.impeccable/
+apps/tether_web/.claude/
 
 # Flutter
 apps/tether_app/.dart_tool/
