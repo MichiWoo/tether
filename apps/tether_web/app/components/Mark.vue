@@ -1,0 +1,19 @@
+<script setup lang="ts">
+// Marca Tether: cuadrado relleno + hilo + cuadrado hueco (la conexión entre dispositivos).
+withDefaults(defineProps<{ size?: number }>(), { size: 14 })
+</script>
+
+<template>
+  <svg
+    :width="size"
+    :height="size * 0.42"
+    viewBox="0 0 40 17"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <rect x="0" y="0" width="17" height="17" fill="currentColor" />
+    <line x1="19" y1="8.5" x2="37" y2="8.5" stroke="currentColor" stroke-width="2" />
+    <rect x="23" y="0" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" />
+  </svg>
+</template>
